@@ -8,46 +8,47 @@
         body {
             font-family: Arial, sans-serif;
             background: white;
+            margin: 0;
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
+            width: 300px;  /* Fixed width */
+            height: 300px; /* Fixed height */
+            overflow: hidden; /* Prevents scrollbars */
         }
         .widget {
-            width: 300px;
+            width: 250px;
             background: white;
             border-radius: 16px;
             box-shadow: none;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
         }
         .widget img {
-            width: 72px;
-            height: 72px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             object-fit: cover;
         }
         .widget h2 {
-            font-size: 20px;
-            margin: 10px 0;
+            font-size: 18px;
+            margin: 8px 0;
         }
         .metric {
-            font-size: 16px;
-            margin: 6px 0;
+            font-size: 15px;
+            margin: 5px 0;
         }
     </style>
 </head>
 <body>
-    <a href="https://www.notion.so/kentheckel/San-Antonio-Spurs-1c3051ef802980429831e74fa33567f0" style="text-decoration: none; color: inherit;">
-        <div class="widget" id="widget">
-            <img src="SAS_Icon.jpg" alt="Icon" />
-            <h2>San Antonio Spurs</h2>
-            <div class="metric">�� Views: 0 📉</div>
-            <div class="metric">👤 Subs: 0 📉</div>
-            <div class="metric">🎥 Uploads: 0 📉</div>
-        </div>
-    </a>
+    <div class="widget" id="widget">
+        <img src="SAS_Icon.jpg" alt="Icon" />
+        <h2>San Antonio Spurs</h2>
+        <div class="metric">👁 Views: 0 📉</div>
+        <div class="metric">👤 Subs: 0 📉</div>
+        <div class="metric">🎥 Uploads: 0 📉</div>
+    </div>
 </body>
 </html>
