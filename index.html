@@ -3,20 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Channel Widget</title>
+  <title>YouTube Analytics Dashboard</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f9f9f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
       margin: 0;
+      padding: 20px;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
     .widget {
-      width: 300px;
       background: white;
       border-radius: 16px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -44,13 +48,7 @@
   </style>
 </head>
 <body>
-  <div class="widget">
-    <img src="" alt="Channel Icon" id="channel-icon" />
-    <h2 id="channel-name">Channel Name</h2>
-    <div class="metric">👁 Views: <span id="views">--</span> <span id="views-trend">📈</span></div>
-    <div class="metric">👤 Subs: <span id="subs">--</span> <span id="subs-trend">📈</span></div>
-    <div class="metric">🎥 Uploads: <span id="uploads">--</span> <span id="uploads-trend">📉</span></div>
-  </div>
+  <div class="dashboard" id="dashboard"></div>
 
   <script>
     const iconMap = {
@@ -63,25 +61,25 @@
       "San Antonio Spurs": "SAS_Icon.jpg"
     };
 
-    const params = new URLSearchParams(window.location.search);
-    const channelParam = params.get('channel') || "All The Smoke";
-
     fetch('data.json')
       .then(res => res.json())
       .then(data => {
-        const channel = data.find(c => c.name === channelParam);
-        if (!channel) return;
-
-        document.getElementById("channel-icon").src = iconMap[channel.name] || "placeholder.png";
-        document.getElementById("channel-name").textContent = channel.name;
-
-        document.getElementById("views").textContent = channel.views_28.toLocaleString();
-        document.getElementById("subs").textContent = channel.subs_28.toLocaleString();
-        document.getElementById("uploads").textContent = channel.uploads_28;
-
-        document.getElementById("views-trend").textContent = channel.views_28 > channel.views_prev_28 ? "📈" : "📉";
-        document.getElementById("subs-trend").textContent = channel.subs_28 > channel.subs_prev_28 ? "📈" : "📉";
-        document.getElementById("uploads-trend").textContent = channel.uploads_28 > channel.uploads_prev_28 ? "📈" : "📉";
+        const dashboard = document.getElementById('dashboard');
+        
+        data.forEach(channel => {
+          const widget = document.createElement('div');
+          widget.className = 'widget';
+          
+          widget.innerHTML = `
+            <img src="${iconMap[channel.name]}" alt="${channel.name}" />
+            <h2>${channel.name}</h2>
+            <div class="metric">👁 Views: ${channel.views_28.toLocaleString()} ${channel.views_28 > channel.views_prev_28 ? "📈" : "📉"}</div>
+            <div class="metric">👤 Subs: ${channel.subs_28.toLocaleString()} ${channel.subs_28 > channel.subs_prev_28 ? "📈" : "📉"}</div>
+            <div class="metric">🎥 Uploads: ${channel.uploads_28} ${channel.uploads_28 > channel.uploads_prev_28 ? "📈" : "📉"}</div>
+          `;
+          
+          dashboard.appendChild(widget);
+        });
       });
   </script>
 </body>

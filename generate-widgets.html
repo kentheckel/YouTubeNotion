@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Widget Generator</title>
+    <title>Generate Widgets</title>
 </head>
 <body>
     <script>
-        const templateHTML = (channel, icon) => `<!DOCTYPE html>
+        function templateHTML(channel, iconFilename) {
+            return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -48,15 +49,29 @@
     </style>
 </head>
 <body>
-    <div class="widget" id="widget">
-        <img src="${icon}" alt="Icon" />
-        <h2>${channel.name}</h2>
-        <div class="metric">👁 Views: ${channel.views_28.toLocaleString()} ${channel.views_28 > channel.views_prev_28 ? "📈" : "📉"}</div>
-        <div class="metric">👤 Subs: ${channel.subs_28.toLocaleString()} ${channel.subs_28 > channel.subs_prev_28 ? "📈" : "📉"}</div>
-        <div class="metric">🎥 Uploads: ${channel.uploads_28} ${channel.uploads_28 > channel.uploads_prev_28 ? "📈" : "📉"}</div>
-    </div>
+    <div class="widget" id="widget"></div>
+
+    <script>
+        fetch('data.json')
+            .then(res => res.json())
+            .then(data => {
+                const channel = data.find(c => c.name === "${channel.name}");
+                if (!channel) return;
+
+                const icon = "${iconFilename}";
+
+                document.getElementById("widget").innerHTML = \`
+                    <img src="\${icon}" alt="Icon" />
+                    <h2>\${channel.name}</h2>
+                    <div class="metric">👁 Views: \${channel.views_28.toLocaleString()} \${channel.views_28 > channel.views_prev_28 ? "📈" : "📉"}</div>
+                    <div class="metric">👤 Subs: \${channel.subs_28.toLocaleString()} \${channel.subs_28 > channel.subs_prev_28 ? "📈" : "📉"}</div>
+                    <div class="metric">🎥 Uploads: \${channel.uploads_28} \${channel.uploads_28 > channel.uploads_prev_28 ? "📈" : "📉"}</div>
+                \`;
+            });
+    </script>
 </body>
 </html>`;
+        }
 
         fetch('data.json')
             .then(res => res.json())
@@ -78,7 +93,7 @@
 
                 data.forEach(channel => {
                     // Use the correct icon from our mapping
-                    const iconFilename = iconMap[channel.name] || `${channel.name.toLowerCase().replace(/ /g, '-')}_icon.jpg`;
+                    const iconFilename = iconMap[channel.name];
                     const htmlContent = templateHTML(channel, iconFilename);
                     
                     // Create filename
