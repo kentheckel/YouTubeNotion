@@ -150,12 +150,14 @@ def upsert_notion_row(channel, stats, analytics, yearly, date_str):
     if page_id:
         url = f"https://api.notion.com/v1/pages/{page_id}"
         res = requests.patch(url, headers=headers, json=payload)
-        print(f"✅ Updated existing row for {channel}: {res.status_code}")
+        print(f"🔴 Notion PATCH error for {channel}: {res.status_code} | {res.text}")
     else:
         url = "https://api.notion.com/v1/pages"
         payload["parent"] = {"database_id": NOTION_DATABASE_ID}
         res = requests.post(url, headers=headers, json=payload)
-        print(f"✅ Created new row for {channel}: {res.status_code}")
+        print(f"🟡 Notion POST error for {channel}: {res.status_code} | {res.text}")
+
+        
 
 def fetch_analytics_for_range(creds, channel_id, start_date, end_date):
     youtube_analytics = build("youtubeAnalytics", "v2", credentials=creds)
