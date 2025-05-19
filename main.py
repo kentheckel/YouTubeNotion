@@ -1,11 +1,13 @@
 import requests
 from datetime import datetime, timedelta
 import pytz
+import os
 
 # --- CONFIGURATION ---
-YOUTUBE_API_KEY = "AIzaSyDWqoGDpo_lpgGpDrY8LNEN6lWVXOorZgk"
-NOTION_TOKEN = "ntn_C13746504099JyZ4XxMBK5JYYWBnmufDmZRspTShavi54q"
-NOTION_DATABASE_ID = "1f8051ef80298027b165cb50b7492a23"
+YOUTUBE_API_KEY = os.environ["YOUTUBE_API_KEY"]
+NOTION_TOKEN = os.environ["NOTION_TOKEN"]
+NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"]
+
 
 CHANNELS = {
     "All The Smoke": "UC2ozVs4pg2K3uFLw6-0ayCQ",
