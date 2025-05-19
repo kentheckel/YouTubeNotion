@@ -19,10 +19,12 @@
             gap: 0;
             flex-wrap: nowrap;
             justify-content: center;
+            width: fit-content;
+            min-width: 1400px;
         }
 
         .widget {
-            width: 200px;
+            width: 180px;
             background: white;
             border-radius: 12px;
             box-shadow: none;
@@ -46,11 +48,6 @@
         .metric {
             font-size: 14px;
             margin: 4px 0;
-        }
-
-        a {
-            text-decoration: none;
-            color: inherit;
         }
     </style>
 </head>
@@ -103,19 +100,16 @@
             .then(data => {
                 const dashboard = document.getElementById('dashboard');
                 
-                // Create a map of channel data for easy lookup
                 const channelMap = {};
                 data.forEach(channel => {
                     channelMap[channel.name] = channel;
                 });
                 
-                // Create widgets in specified order
                 channelOrder.forEach(channelName => {
                     const channel = channelMap[channelName];
                     if (!channel) return;
 
-                    const widget = document.createElement('a');
-                    widget.href = notionLinks[channel.name];
+                    const widget = document.createElement('div');
                     
                     widget.innerHTML = `
                         <div class="widget">
