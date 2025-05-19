@@ -111,12 +111,17 @@ def find_existing_row(channel_name, date_str):
 
     for page in pages:
         props = page["properties"]
-        title = props.get("Channel Name", {}).get("title", [])
-        date = props.get("Date", {}).get("date", {}).get("start", "")
-        if title and title[0]["text"]["content"] == channel_name and date == date_str:
+        title_prop = props.get("Channel Name", {}).get("title", [])
+        date_prop = props.get("Date", {})
+
+        title = title_prop[0]["text"]["content"] if title_prop else ""
+        date = date_prop.get("date", {}).get("start", "") if date_prop else ""
+
+        if title == channel_name and date == date_str:
             return page["id"]
 
     return None
+
 
 def upsert_notion_row(channel, stats, analytics, yearly, date_str):
     page_id = find_existing_row(channel, date_str)
