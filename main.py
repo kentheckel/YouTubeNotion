@@ -215,7 +215,7 @@ def get_advanced_analytics(channel_id):
             "views_365": 0, "subs_365": 0
         }
     
-    def get_yearly_analytics(channel_id):
+def get_yearly_analytics(channel_id):
     try:
         token_path = f"tokens/token_{channel_id}.pickle"
         with open(token_path, "rb") as token_file:
