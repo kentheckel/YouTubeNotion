@@ -118,26 +118,34 @@ def find_existing_row(channel_name, date_str):
 
     return None
 
-def upsert_notion_row(channel, stats, analytics, date_str):
+def upsert_notion_row(channel, stats, analytics, yearly, date_str):
     page_id = find_existing_row(channel, date_str)
+
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
         "Notion-Version": "2022-06-28",
         "Content-Type": "application/json"
     }
 
-    payload = {
-        "properties": {
-            "Channel Name": {"title": [{"text": {"content": channel}}]},
-            "Date": {"date": {"start": date_str}},
-            "Subscribers": {"number": stats["subs"]},
-            "Total Views": {"number": stats["views"]},
-            "Total Videos": {"number": stats["videos"]},
-            "Views (28 Days)": {"number": analytics["views_28"]},
-            "Subs (28 Days)": {"number": analytics["subs_28"]},
-            "Uploads (28 Days)": {"number": analytics["uploads_28"]}
-        }
+    properties = {
+        "Channel Name": {"title": [{"text": {"content": channel}}]},
+        "Date": {"date": {"start": date_str}},
+        "Subscribers": {"number": stats["subs"]},
+        "Total Views": {"number": stats["views"]},
+        "Total Videos": {"number": stats["videos"]},
+        "Views (28 Days)": {"number": analytics["views_28"]},
+        "Subs (28 Days)": {"number": analytics["subs_28"]},
+        "Views (Prev 28 Days)": {"number": analytics["views_prev_28"]},
+        "Subs (Prev 28 Days)": {"number": analytics["subs_prev_28"]},
+        "Views (2022)": {"number": yearly["views_2022"]},
+        "Subs (2022)": {"number": yearly["subs_2022"]},
+        "Views (2023)": {"number": yearly["views_2023"]},
+        "Subs (2023)": {"number": yearly["subs_2023"]},
+        "Views (2024)": {"number": yearly["views_2024"]},
+        "Subs (2024)": {"number": yearly["subs_2024"]}
     }
+
+    payload = {"properties": properties}
 
     if page_id:
         url = f"https://api.notion.com/v1/pages/{page_id}"
@@ -149,18 +157,119 @@ def upsert_notion_row(channel, stats, analytics, date_str):
         res = requests.post(url, headers=headers, json=payload)
         print(f"✅ Created new row for {channel}: {res.status_code}")
 
+def fetch_analytics_for_range(creds, channel_id, start_date, end_date):
+    youtube_analytics = build("youtubeAnalytics", "v2", credentials=creds)
+    response = youtube_analytics.reports().query(
+        ids=f"channel=={channel_id}",
+        startDate=start_date,
+        endDate=end_date,
+        metrics="views,subscribersGained,subscribersLost",
+        dimensions="day",
+        sort="day"
+    ).execute()
+
+    rows = response.get("rows", [])
+    views = sum(row[1] for row in rows) if rows else 0
+    subs = sum(row[2] - row[3] for row in rows) if rows else 0
+    return views, subs
+
+def get_advanced_analytics(channel_id):
+    try:
+        token_path = f"tokens/token_{channel_id}.pickle"
+        with open(token_path, "rb") as token_file:
+            creds = pickle.load(token_file)
+    except FileNotFoundError:
+        print(f"⚠️ No token found for {channel_id}")
+        return {
+            "views_28": 0, "subs_28": 0,
+            "views_prev_28": 0, "subs_prev_28": 0,
+            "views_365": 0, "subs_365": 0
+        }
+
+    today = datetime.utcnow().date()
+    start_28 = (today - timedelta(days=28)).isoformat()
+    start_prev_28 = (today - timedelta(days=56)).isoformat()
+    end_prev_28 = (today - timedelta(days=29)).isoformat()
+    start_365 = (today - timedelta(days=365)).isoformat()
+    today_str = today.isoformat()
+
+    try:
+        views_28, subs_28 = fetch_analytics_for_range(creds, channel_id, start_28, today_str)
+        views_prev_28, subs_prev_28 = fetch_analytics_for_range(creds, channel_id, start_prev_28, end_prev_28)
+        views_365, subs_365 = fetch_analytics_for_range(creds, channel_id, start_365, today_str)
+
+        return {
+            "views_28": views_28,
+            "subs_28": subs_28,
+            "views_prev_28": views_prev_28,
+            "subs_prev_28": subs_prev_28,
+            "views_365": views_365,
+            "subs_365": subs_365
+        }
+
+    except Exception as e:
+        print(f"⚠️ Analytics fetch failed for {channel_id}: {e}")
+        return {
+            "views_28": 0, "subs_28": 0,
+            "views_prev_28": 0, "subs_prev_28": 0,
+            "views_365": 0, "subs_365": 0
+        }
+    
+    def get_yearly_analytics(channel_id):
+    try:
+        token_path = f"tokens/token_{channel_id}.pickle"
+        with open(token_path, "rb") as token_file:
+            creds = pickle.load(token_file)
+    except FileNotFoundError:
+        print(f"⚠️ No token found for {channel_id}")
+        return {
+            "views_2022": 0, "subs_2022": 0,
+            "views_2023": 0, "subs_2023": 0,
+            "views_2024": 0, "subs_2024": 0
+        }
+
+    def fetch_for_year(year):
+        start = f"{year}-01-01"
+        end = f"{year}-12-31"
+        return fetch_analytics_for_range(creds, channel_id, start, end)
+
+    try:
+        views_2022, subs_2022 = fetch_for_year(2022)
+        views_2023, subs_2023 = fetch_for_year(2023)
+        views_2024, subs_2024 = fetch_for_year(2024)
+
+        return {
+            "views_2022": views_2022,
+            "subs_2022": subs_2022,
+            "views_2023": views_2023,
+            "subs_2023": subs_2023,
+            "views_2024": views_2024,
+            "subs_2024": subs_2024
+        }
+
+    except Exception as e:
+        print(f"⚠️ Failed yearly analytics for {channel_id}: {e}")
+        return {
+            "views_2022": 0, "subs_2022": 0,
+            "views_2023": 0, "subs_2023": 0,
+            "views_2024": 0, "subs_2024": 0
+        }
+
+    
 # --- MAIN ---
 today = datetime.now(pytz.timezone("US/Eastern")).strftime("%Y-%m-%d")
 start_28_days = (datetime.now() - timedelta(days=28)).strftime("%Y-%m-%d")
 
 for channel_name, channel_id in CHANNELS.items():
     stats = get_channel_stats(channel_id)
-    analytics = get_analytics(channel_id, start_28_days, today)
-    upsert_notion_row(channel_name, stats, analytics, today)
+    analytics = get_advanced_analytics(channel_id)
+    yearly_analytics = get_yearly_analytics(channel_id)
+    upsert_notion_row(channel_name, stats, analytics, yearly_analytics, today)
 
     # Debug output per channel
     print(f"Processing: {channel_name}")
     print(f"Stats: {stats}")
-    print(f"Analytics: {analytics}")
+    print(f"Analytics (28-day & previous): {analytics}")
+    print(f"Yearly Analytics: {yearly_analytics}")
 
 print("✅ Finished processing all channels.")
