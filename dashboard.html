@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Analytics Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: white;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .dashboard {
+            display: flex;
+            gap: 10px;
+            flex-wrap: nowrap;
+            justify-content: center;
+        }
+
+        .widget {
+            width: 200px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: none;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .widget img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin-bottom: 8px;
+            object-fit: cover;
+        }
+
+        .widget h2 {
+            font-size: 16px;
+            margin: 8px 0;
+        }
+
+        .metric {
+            font-size: 14px;
+            margin: 4px 0;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard" id="dashboard"></div>
+
+    <script>
+        const notionLinks = {
+            "All The Smoke": "https://www.notion.so/kentheckel/All-The-Smoke-1c3051ef8029805da951f3385914ad6b",
+            "All The Smoke Fight": "https://www.notion.so/kentheckel/All-The-Smoke-Fight-1c3051ef802980a19662eba6a96cdc8e",
+            "KG Certified": "https://www.notion.so/kentheckel/KG-Certified-1cb051ef80298064aaaffa6eb35356ac",
+            "Morning Kombat": "https://www.notion.so/kentheckel/Morning-Kombat-1c3051ef8029802aa60df13b240e1bef",
+            "Ring Champs": "https://www.notion.so/kentheckel/Ring-Champs-1c3051ef8029809a8075dafd282ee4bd",
+            "Victor Oladipo": "https://www.notion.so/kentheckel/Inner-Court-1d7051ef802980db8ba5cc19454257e9",
+            "San Antonio Spurs": "https://www.notion.so/kentheckel/San-Antonio-Spurs-1c3051ef802980429831e74fa33567f0"
+        };
+
+        const iconMap = {
+            "All The Smoke": "ATS_Icon.jpg",
+            "All The Smoke Fight": "ATSF_Icon.jpg",
+            "KG Certified": "KG_Icon.jpg",
+            "Morning Kombat": "MK_Icon.jpg",
+            "Ring Champs": "RC_Icon.jpg",
+            "Victor Oladipo": "TIC_Icon.jpg",
+            "San Antonio Spurs": "SAS_Icon.jpg"
+        };
+
+        const displayNames = {
+            "All The Smoke": "All The Smoke",
+            "All The Smoke Fight": "ATS Fight",
+            "KG Certified": "KG Certified",
+            "Morning Kombat": "Morning Kombat",
+            "Ring Champs": "Ring Champs",
+            "Victor Oladipo": "Inner Court",
+            "San Antonio Spurs": "Spurs"
+        };
+
+        fetch('data.json')
+            .then(res => res.json())
+            .then(data => {
+                const dashboard = document.getElementById('dashboard');
+                
+                data.forEach(channel => {
+                    const widget = document.createElement('a');
+                    widget.href = notionLinks[channel.name];
+                    
+                    widget.innerHTML = `
+                        <div class="widget">
+                            <img src="${iconMap[channel.name]}" alt="${channel.name}" />
+                            <h2>${displayNames[channel.name]}</h2>
+                            <div class="metric">👁 ${channel.views_28.toLocaleString()} ${channel.views_28 > channel.views_prev_28 ? "📈" : "📉"}</div>
+                            <div class="metric">👤 ${channel.subs_28.toLocaleString()} ${channel.subs_28 > channel.subs_prev_28 ? "📈" : "📉"}</div>
+                            <div class="metric">🎥 ${channel.uploads_28} ${channel.uploads_28 > channel.uploads_prev_28 ? "📈" : "📉"}</div>
+                        </div>
+                    `;
+                    
+                    dashboard.appendChild(widget);
+                });
+            });
+    </script>
+</body>
+</html> 
