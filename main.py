@@ -3,6 +3,9 @@ from datetime import datetime, timedelta
 import pytz
 import os
 
+from googleapiclient.discovery import build
+import pickle
+
 # --- CONFIGURATION ---
 YOUTUBE_API_KEY = os.environ["YOUTUBE_API_KEY"]
 NOTION_TOKEN = os.environ["NOTION_TOKEN"]
@@ -36,13 +39,70 @@ def get_channel_stats(channel_id):
     }
 
 def get_analytics(channel_id, start_date, end_date):
-    # NOTE: This endpoint requires OAuth2, not just an API key.
-    # Placeholder data for now.
-    return {
-        "views_28": 0,
-        "subs_28": 0,
-        "uploads_28": 0
-    }
+    # Load saved credentials
+    with open("token.pickle", "rb") as token_file:
+        creds = pickle.load(token_file)
+
+    # Build Analytics API client
+    youtube_analytics = build("youtubeAnalytics", "v2", credentials=creds)
+
+    try:
+        # Query 28-day performance
+        response = youtube_analytics.reports().query(
+            ids=f"channel=={channel_id}",
+            startDate=start_date,
+            endDate=end_date,
+            metrics="views,subscribersGained,subscribersLost,estimatedMinutesWatched,comments,likes,dislikes,averageViewDuration",
+            dimensions="day",
+            filters="",
+            sort="day"
+        ).execute()
+
+        rows = response.get("rows", [])
+        views = sum(row[1] for row in rows) if rows else 0
+        subs = sum(row[2] - row[3] for row in rows) if rows else 0
+
+        # For uploads: use the YouTube Data API to get video counts filtered by publish date
+        upload_count = get_uploads_in_range(channel_id, start_date, end_date, creds)
+
+        return {
+            "views_28": views,
+            "subs_28": subs,
+            "uploads_28": upload_count
+        }
+
+    except Exception as e:
+        print(f"⚠️ Failed to get analytics for {channel_id}: {e}")
+        return {
+            "views_28": 0,
+            "subs_28": 0,
+            "uploads_28": 0
+        }
+        
+def get_uploads_in_range(channel_id, start_date, end_date, creds):
+    youtube = build("youtube", "v3", credentials=creds)
+    upload_count = 0
+    next_page_token = None
+
+    while True:
+        response = youtube.search().list(
+            part="snippet",
+            channelId=channel_id,
+            maxResults=50,
+            order="date",
+            publishedAfter=start_date + "T00:00:00Z",
+            publishedBefore=end_date + "T23:59:59Z",
+            type="video",
+            pageToken=next_page_token
+        ).execute()
+
+        upload_count += len(response.get("items", []))
+        next_page_token = response.get("nextPageToken")
+
+        if not next_page_token:
+            break
+
+    return upload_count
 
 def get_notion_pages():
     url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
