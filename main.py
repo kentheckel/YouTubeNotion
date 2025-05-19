@@ -113,19 +113,22 @@ def find_existing_row(channel_name, date_str):
         props = page["properties"]
         title_prop = props.get("Channel Name", {}).get("title", [])
         date_object = props.get("Date", {}).get("date")
+        icon_files = props.get("Channel Icon", {}).get("files", [])
+        icon_url = icon_files[0]["file"]["url"] if icon_files else ""
 
         title = title_prop[0]["text"]["content"] if title_prop else ""
         date = date_object.get("start") if date_object else ""
 
         if title == channel_name and date == date_str:
-            return page["id"]
+            return page["id"], icon_url
 
-    return None
+    return None, ""
+
 
 
 
 def upsert_notion_row(channel, stats, analytics, yearly, date_str):
-    page_id = find_existing_row(channel, date_str)
+    page_id, icon_url = find_existing_row(channel, date_str)
 
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
@@ -303,10 +306,12 @@ for channel_name, channel_id in CHANNELS.items():
     stats = get_channel_stats(channel_id)
     analytics = get_advanced_analytics(channel_id)
     yearly_analytics = get_yearly_analytics(channel_id)
+    page_id, icon_url = find_existing_row(channel_name, today)
 
-    # Merge all fields into one flat object
+    # Add all values into exportable JSON
     export_data.append({
         "name": channel_name,
+        "icon": icon_url,
         "views_28": analytics["views_28"],
         "views_prev_28": analytics["views_prev_28"],
         "subs_28": analytics["subs_28"],
@@ -315,6 +320,8 @@ for channel_name, channel_id in CHANNELS.items():
         "uploads_prev_28": analytics["uploads_prev_28"]
     })
 
-# Save to data.json in root folder (or adjust path as needed)
+# Write data.json for widget
+os.makedirs("public", exist_ok=True)
 with open("public/data.json", "w") as f:
     json.dump(export_data, f, indent=2)
+

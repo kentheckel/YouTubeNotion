@@ -73,7 +73,7 @@
         const channel = data.find(c => c.name === channelParam);
         if (!channel) return;
 
-        document.getElementById("channel-icon").src = iconMap[channel.name] || "placeholder.png";
+        document.getElementById("channel-icon").src = channel.icon || "placeholder.png";
         document.getElementById("channel-name").textContent = channel.name;
 
         document.getElementById("views").textContent = channel.views_28.toLocaleString();
