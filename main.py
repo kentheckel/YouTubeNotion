@@ -103,3 +103,8 @@ for channel_name, channel_id in CHANNELS.items():
     upsert_notion_row(channel_name, stats, analytics, today)
 
 "✅ Script updated with analytics placeholders. OAuth setup needed for 28-day stats."
+print(f"Processing: {channel_name}")
+print(f"Stats: {stats}")
+print(f"Analytics: {analytics}")
+print("✅ Finished processing all channels.")
+
