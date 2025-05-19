@@ -16,7 +16,7 @@
 
         .dashboard {
             display: flex;
-            gap: 10px;
+            gap: 4px;
             flex-wrap: nowrap;
             justify-content: center;
         }
@@ -88,12 +88,32 @@
             "San Antonio Spurs": "Spurs"
         };
 
+        const channelOrder = [
+            "All The Smoke",
+            "All The Smoke Fight",
+            "Morning Kombat",
+            "Ring Champs",
+            "KG Certified",
+            "Victor Oladipo",
+            "San Antonio Spurs"
+        ];
+
         fetch('data.json')
             .then(res => res.json())
             .then(data => {
                 const dashboard = document.getElementById('dashboard');
                 
+                // Create a map of channel data for easy lookup
+                const channelMap = {};
                 data.forEach(channel => {
+                    channelMap[channel.name] = channel;
+                });
+                
+                // Create widgets in specified order
+                channelOrder.forEach(channelName => {
+                    const channel = channelMap[channelName];
+                    if (!channel) return;
+
                     const widget = document.createElement('a');
                     widget.href = notionLinks[channel.name];
                     
