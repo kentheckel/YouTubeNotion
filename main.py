@@ -135,8 +135,12 @@ def upsert_notion_row(channel, stats, analytics, yearly, date_str):
         "Total Videos": {"number": stats["videos"]},
         "Views (28 Days)": {"number": analytics["views_28"]},
         "Subs (28 Days)": {"number": analytics["subs_28"]},
+        "Uploads (28 Days)": {"number": analytics["uploads_28"]},
         "Views (Prev 28 Days)": {"number": analytics["views_prev_28"]},
         "Subs (Prev 28 Days)": {"number": analytics["subs_prev_28"]},
+        "Uploads (Prev 28 Days)": {"number": analytics["uploads_prev_28"]},
+        "Views (365 Days)": {"number": analytics["views_365"]},
+        "Subs (365 Days)": {"number": analytics["subs_365"]},
         "Views (2022)": {"number": yearly["views_2022"]},
         "Subs (2022)": {"number": yearly["subs_2022"]},
         "Views (2023)": {"number": yearly["views_2023"]},
@@ -150,14 +154,13 @@ def upsert_notion_row(channel, stats, analytics, yearly, date_str):
     if page_id:
         url = f"https://api.notion.com/v1/pages/{page_id}"
         res = requests.patch(url, headers=headers, json=payload)
-        print(f"🔴 Notion PATCH error for {channel}: {res.status_code} | {res.text}")
+        print(f"🔴 Notion PATCH response for {channel}: {res.status_code} | {res.text}")
     else:
         url = "https://api.notion.com/v1/pages"
         payload["parent"] = {"database_id": NOTION_DATABASE_ID}
         res = requests.post(url, headers=headers, json=payload)
-        print(f"🟡 Notion POST error for {channel}: {res.status_code} | {res.text}")
+        print(f"🟡 Notion POST response for {channel}: {res.status_code} | {res.text}")
 
-        
 
 def fetch_analytics_for_range(creds, channel_id, start_date, end_date):
     youtube_analytics = build("youtubeAnalytics", "v2", credentials=creds)
@@ -185,6 +188,7 @@ def get_advanced_analytics(channel_id):
         return {
             "views_28": 0, "subs_28": 0,
             "views_prev_28": 0, "subs_prev_28": 0,
+            "uploads_28": 0, "uploads_prev_28": 0,
             "views_365": 0, "subs_365": 0
         }
 
@@ -198,13 +202,19 @@ def get_advanced_analytics(channel_id):
     try:
         views_28, subs_28 = fetch_analytics_for_range(creds, channel_id, start_28, today_str)
         views_prev_28, subs_prev_28 = fetch_analytics_for_range(creds, channel_id, start_prev_28, end_prev_28)
+
+        uploads_28 = get_uploads_in_range(channel_id, start_28, today_str, creds)
+        uploads_prev_28 = get_uploads_in_range(channel_id, start_prev_28, end_prev_28, creds)
+
         views_365, subs_365 = fetch_analytics_for_range(creds, channel_id, start_365, today_str)
 
         return {
             "views_28": views_28,
             "subs_28": subs_28,
+            "uploads_28": uploads_28,
             "views_prev_28": views_prev_28,
             "subs_prev_28": subs_prev_28,
+            "uploads_prev_28": uploads_prev_28,
             "views_365": views_365,
             "subs_365": subs_365
         }
@@ -213,10 +223,12 @@ def get_advanced_analytics(channel_id):
         print(f"⚠️ Analytics fetch failed for {channel_id}: {e}")
         return {
             "views_28": 0, "subs_28": 0,
+            "uploads_28": 0,
             "views_prev_28": 0, "subs_prev_28": 0,
+            "uploads_prev_28": 0,
             "views_365": 0, "subs_365": 0
         }
-    
+
 def get_yearly_analytics(channel_id):
     try:
         token_path = f"tokens/token_{channel_id}.pickle"
