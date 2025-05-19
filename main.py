@@ -11,7 +11,6 @@ YOUTUBE_API_KEY = os.environ["YOUTUBE_API_KEY"]
 NOTION_TOKEN = os.environ["NOTION_TOKEN"]
 NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"]
 
-
 CHANNELS = {
     "All The Smoke": "UC2ozVs4pg2K3uFLw6-0ayCQ",
     "KG Certified": "UCa9W_cPwwbDlwBwHOd1YWoQ",
@@ -39,15 +38,17 @@ def get_channel_stats(channel_id):
     }
 
 def get_analytics(channel_id, start_date, end_date):
-    # Load saved credentials
-    with open("token.pickle", "rb") as token_file:
-        creds = pickle.load(token_file)
+    try:
+        token_path = f"tokens/token_{channel_id}.pickle"
+        with open(token_path, "rb") as token_file:
+            creds = pickle.load(token_file)
+    except FileNotFoundError:
+        print(f"⚠️ No token found for {channel_id}")
+        return {"views_28": 0, "subs_28": 0, "uploads_28": 0}
 
-    # Build Analytics API client
     youtube_analytics = build("youtubeAnalytics", "v2", credentials=creds)
 
     try:
-        # Query 28-day performance
         response = youtube_analytics.reports().query(
             ids=f"channel=={channel_id}",
             startDate=start_date,
@@ -61,8 +62,6 @@ def get_analytics(channel_id, start_date, end_date):
         rows = response.get("rows", [])
         views = sum(row[1] for row in rows) if rows else 0
         subs = sum(row[2] - row[3] for row in rows) if rows else 0
-
-        # For uploads: use the YouTube Data API to get video counts filtered by publish date
         upload_count = get_uploads_in_range(channel_id, start_date, end_date, creds)
 
         return {
@@ -73,12 +72,8 @@ def get_analytics(channel_id, start_date, end_date):
 
     except Exception as e:
         print(f"⚠️ Failed to get analytics for {channel_id}: {e}")
-        return {
-            "views_28": 0,
-            "subs_28": 0,
-            "uploads_28": 0
-        }
-        
+        return {"views_28": 0, "subs_28": 0, "uploads_28": 0}
+
 def get_uploads_in_range(channel_id, start_date, end_date, creds):
     youtube = build("youtube", "v3", credentials=creds)
     upload_count = 0
@@ -98,20 +93,10 @@ def get_uploads_in_range(channel_id, start_date, end_date, creds):
 
         upload_count += len(response.get("items", []))
         next_page_token = response.get("nextPageToken")
-
         if not next_page_token:
             break
 
     return upload_count
-
-def get_notion_pages():
-    url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
-    headers = {
-        "Authorization": f"Bearer {NOTION_TOKEN}",
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json"
-    }
-    return requests.post(url, headers=headers).json()
 
 def find_existing_row(channel_name, date_str):
     url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
@@ -128,16 +113,13 @@ def find_existing_row(channel_name, date_str):
         props = page["properties"]
         title = props.get("Channel Name", {}).get("title", [])
         date = props.get("Date", {}).get("date", {}).get("start", "")
-
         if title and title[0]["text"]["content"] == channel_name and date == date_str:
             return page["id"]
 
     return None
 
-
 def upsert_notion_row(channel, stats, analytics, date_str):
     page_id = find_existing_row(channel, date_str)
-
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
         "Notion-Version": "2022-06-28",
@@ -176,9 +158,9 @@ for channel_name, channel_id in CHANNELS.items():
     analytics = get_analytics(channel_id, start_28_days, today)
     upsert_notion_row(channel_name, stats, analytics, today)
 
-"✅ Script updated with analytics placeholders. OAuth setup needed for 28-day stats."
-print(f"Processing: {channel_name}")
-print(f"Stats: {stats}")
-print(f"Analytics: {analytics}")
-print("✅ Finished processing all channels.")
+    # Debug output per channel
+    print(f"Processing: {channel_name}")
+    print(f"Stats: {stats}")
+    print(f"Analytics: {analytics}")
 
+print("✅ Finished processing all channels.")
