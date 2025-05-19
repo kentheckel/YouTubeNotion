@@ -293,3 +293,28 @@ if __name__ == "__main__":
         print(f"Yearly Analytics: {yearly_analytics}")
 
     print("✅ Finished processing all channels.")
+
+import json
+
+# Final export list
+export_data = []
+
+for channel_name, channel_id in CHANNELS.items():
+    stats = get_channel_stats(channel_id)
+    analytics = get_advanced_analytics(channel_id)
+    yearly_analytics = get_yearly_analytics(channel_id)
+
+    # Merge all fields into one flat object
+    export_data.append({
+        "name": channel_name,
+        "views_28": analytics["views_28"],
+        "views_prev_28": analytics["views_prev_28"],
+        "subs_28": analytics["subs_28"],
+        "subs_prev_28": analytics["subs_prev_28"],
+        "uploads_28": analytics["uploads_28"],
+        "uploads_prev_28": analytics["uploads_prev_28"]
+    })
+
+# Save to data.json in root folder (or adjust path as needed)
+with open("public/data.json", "w") as f:
+    json.dump(export_data, f, indent=2)

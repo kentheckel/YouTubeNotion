@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Channel Widget</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .widget {
+      width: 300px;
+      aspect-ratio: 1 / 2;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .widget img {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      margin-bottom: 12px;
+      object-fit: cover;
+    }
+
+    .widget h2 {
+      font-size: 20px;
+      margin: 10px 0;
+    }
+
+    .metric {
+      font-size: 16px;
+      margin: 6px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="widget">
+    <img src="" alt="Channel Icon" id="channel-icon" />
+    <h2 id="channel-name">Channel Name</h2>
+    <div class="metric">👁 Views: <span id="views">--</span> <span id="views-trend">📈</span></div>
+    <div class="metric">👤 Subs: <span id="subs">--</span> <span id="subs-trend">📈</span></div>
+    <div class="metric">🎥 Uploads: <span id="uploads">--</span> <span id="uploads-trend">📉</span></div>
+  </div>
+
+  <script>
+    const iconMap = {
+      "All The Smoke": "ATS_Icon.jpg",
+      "All The Smoke Fight": "ATSF_Icon.jpg",
+      "KG Certified": "KG_Icon.jpg",
+      "Morning Kombat": "MK_Icon.jpg",
+      "Ring Champs": "RC_Icon.jpg",
+      "Victor Oladipo": "TIC_Icon.jpg",
+      "San Antonio Spurs": "SAS_Icon.jpg"
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const channelParam = params.get('channel') || "All The Smoke";
+
+    fetch('data.json')
+      .then(res => res.json())
+      .then(data => {
+        const channel = data.find(c => c.name === channelParam);
+        if (!channel) return;
+
+        document.getElementById("channel-icon").src = iconMap[channel.name] || "placeholder.png";
+        document.getElementById("channel-name").textContent = channel.name;
+
+        document.getElementById("views").textContent = channel.views_28.toLocaleString();
+        document.getElementById("subs").textContent = channel.subs_28.toLocaleString();
+        document.getElementById("uploads").textContent = channel.uploads_28;
+
+        document.getElementById("views-trend").textContent = channel.views_28 > channel.views_prev_28 ? "📈" : "📉";
+        document.getElementById("subs-trend").textContent = channel.subs_28 > channel.subs_prev_28 ? "📈" : "📉";
+        document.getElementById("uploads-trend").textContent = channel.uploads_28 > channel.uploads_prev_28 ? "📈" : "📉";
+      });
+  </script>
+</body>
+</html>
+
