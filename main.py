@@ -54,16 +54,30 @@ def get_notion_pages():
     return requests.post(url, headers=headers).json()
 
 def find_existing_row(channel_name, date_str):
-    pages = get_notion_pages().get("results", [])
+    url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
+    headers = {
+        "Authorization": f"Bearer {NOTION_TOKEN}",
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(url, headers=headers).json()
+    pages = response.get("results", [])
+
     for page in pages:
         props = page["properties"]
         title = props.get("Channel Name", {}).get("title", [])
         date = props.get("Date", {}).get("date", {}).get("start", "")
-        if title and title[0]["text"]["content"] == channel_name and date.startswith(date_str):
+
+        if title and title[0]["text"]["content"] == channel_name and date == date_str:
             return page["id"]
+
     return None
 
+
 def upsert_notion_row(channel, stats, analytics, date_str):
+    page_id = find_existing_row(channel, date_str)
+
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
         "Notion-Version": "2022-06-28",
@@ -71,7 +85,6 @@ def upsert_notion_row(channel, stats, analytics, date_str):
     }
 
     payload = {
-        "parent": {"database_id": NOTION_DATABASE_ID},
         "properties": {
             "Channel Name": {"title": [{"text": {"content": channel}}]},
             "Date": {"date": {"start": date_str}},
@@ -84,17 +97,15 @@ def upsert_notion_row(channel, stats, analytics, date_str):
         }
     }
 
-    res = requests.post("https://api.notion.com/v1/pages", headers=headers, json=payload)
-    print(f"Notion response for {channel}:", res.status_code, res.text)
-
-
     if page_id:
         url = f"https://api.notion.com/v1/pages/{page_id}"
-        requests.patch(url, headers=headers, json=payload)
+        res = requests.patch(url, headers=headers, json=payload)
+        print(f"✅ Updated existing row for {channel}: {res.status_code}")
     else:
         url = "https://api.notion.com/v1/pages"
         payload["parent"] = {"database_id": NOTION_DATABASE_ID}
-        requests.post(url, headers=headers, json=payload)
+        res = requests.post(url, headers=headers, json=payload)
+        print(f"✅ Created new row for {channel}: {res.status_code}")
 
 # --- MAIN ---
 today = datetime.now(pytz.timezone("US/Eastern")).strftime("%Y-%m-%d")
