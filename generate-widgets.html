@@ -61,18 +61,42 @@
         fetch('data.json')
             .then(res => res.json())
             .then(data => {
+                // Create a list of links in the document
+                const linkList = document.createElement('ul');
+                document.body.appendChild(linkList);
+
+                // Icon mapping
+                const iconMap = {
+                    'All The Smoke': 'ATS_Icon.jpg',
+                    'All The Smoke Freestyle': 'ATSF_Icon.jpg',
+                    'KG Certified': 'KG_Icon.jpg',
+                    'Morning Kombat': 'MK_Icon.jpg',
+                    'Ring Champs': 'RC_Icon.jpg',
+                    'San Antonio Spurs': 'SAS_Icon.jpg',
+                    'Victor Oladipo': 'TIC_Icon.jpg'
+                };
+
                 data.forEach(channel => {
-                    // Create icon filename based on channel name
-                    const iconFilename = channel.name.toLowerCase().replace(/ /g, '-') + '_icon.jpg';
-                    
-                    // Generate HTML content
+                    // Use the correct icon from our mapping
+                    const iconFilename = iconMap[channel.name] || `${channel.name.toLowerCase().replace(/ /g, '-')}_icon.jpg`;
                     const htmlContent = templateHTML(channel, iconFilename);
                     
-                    // Create a download link for each HTML file
+                    // Create filename
+                    const filename = `${channel.name.toLowerCase().replace(/ /g, '-')}.html`;
+                    
+                    // Add link to the list
+                    const li = document.createElement('li');
+                    const link = document.createElement('a');
+                    link.href = filename;
+                    link.textContent = channel.name;
+                    li.appendChild(link);
+                    linkList.appendChild(li);
+                    
+                    // Download file
                     const blob = new Blob([htmlContent], { type: 'text/html' });
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
-                    a.download = `${channel.name.toLowerCase().replace(/ /g, '-')}.html`;
+                    a.download = filename;
                     a.click();
                     URL.revokeObjectURL(a.href);
                 });
