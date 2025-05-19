@@ -255,21 +255,21 @@ def get_yearly_analytics(channel_id):
             "views_2024": 0, "subs_2024": 0
         }
 
-    
 # --- MAIN ---
-today = datetime.now(pytz.timezone("US/Eastern")).strftime("%Y-%m-%d")
-start_28_days = (datetime.now() - timedelta(days=28)).strftime("%Y-%m-%d")
+if __name__ == "__main__":
+    today = datetime.now(pytz.timezone("US/Eastern")).strftime("%Y-%m-%d")
+    start_28_days = (datetime.now() - timedelta(days=28)).strftime("%Y-%m-%d")
 
-for channel_name, channel_id in CHANNELS.items():
-    stats = get_channel_stats(channel_id)
-    analytics = get_advanced_analytics(channel_id)
-    yearly_analytics = get_yearly_analytics(channel_id)
-    upsert_notion_row(channel_name, stats, analytics, yearly_analytics, today)
+    for channel_name, channel_id in CHANNELS.items():
+        stats = get_channel_stats(channel_id)
+        analytics = get_advanced_analytics(channel_id)
+        yearly_analytics = get_yearly_analytics(channel_id)
+        upsert_notion_row(channel_name, stats, analytics, yearly_analytics, today)
 
-    # Debug output per channel
-    print(f"Processing: {channel_name}")
-    print(f"Stats: {stats}")
-    print(f"Analytics (28-day & previous): {analytics}")
-    print(f"Yearly Analytics: {yearly_analytics}")
+        # Debug output per channel
+        print(f"Processing: {channel_name}")
+        print(f"Stats: {stats}")
+        print(f"Analytics (28-day & previous): {analytics}")
+        print(f"Yearly Analytics: {yearly_analytics}")
 
-print("✅ Finished processing all channels.")
+    print("✅ Finished processing all channels.")
