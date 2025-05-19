@@ -2,52 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Victor Oladipo Widget</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>The Inner Court Widget</title>
     <style>
-        body {
+        html, body {
             font-family: Arial, sans-serif;
-            background: #f9f9f9;
+            background: transparent;
+            margin: 0;
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
+            width: 200px;
+            height: 200px;
+            overflow: hidden;
+            position: fixed;
+            touch-action: none;
+            -ms-touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
         }
         .widget {
-            width: 300px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            padding: 20px;
+            width: 180px;
+            background: transparent;
+            border-radius: 12px;
+            box-shadow: none;
+            padding: 10px;
             text-align: center;
         }
         .widget img {
-            width: 72px;
-            height: 72px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             object-fit: cover;
+            pointer-events: none;
         }
         .widget h2 {
-            font-size: 20px;
-            margin: 10px 0;
+            font-size: 16px;
+            margin: 5px 0;
         }
         .metric {
-            font-size: 16px;
-            margin: 6px 0;
+            font-size: 13px;
+            margin: 3px 0;
         }
     </style>
 </head>
 <body>
-    <a href="https://www.notion.so/kentheckel/Inner-Court-1d7051ef802980db8ba5cc19454257e9" style="text-decoration: none; color: inherit;">
-        <div class="widget" id="widget">
-            <img src="TIC_Icon.jpg" alt="Icon" />
-            <h2>Victor Oladipo</h2>
-            <div class="metric">👁 Views: 164,728 📈</div>
-            <div class="metric">👤 Subs: 293 📈</div>
-            <div class="metric">🎥 Uploads: 67 📈</div>
-        </div>
-    </a>
+    <div class="widget" id="widget"></div>
+
+    <script>
+        fetch('data.json')
+            .then(res => res.json())
+            .then(data => {
+                const channel = data.find(c => c.name === "Victor Oladipo");
+                if (!channel) return;
+
+                const icon = "TIC_Icon.jpg";
+
+                document.getElementById("widget").innerHTML = `
+                    <img src="${icon}" alt="Icon" />
+                    <h2>Inner Court</h2>
+                    <div class="metric">👁 ${channel.views_28.toLocaleString()} ${channel.views_28 > channel.views_prev_28 ? "📈" : "📉"}</div>
+                    <div class="metric">👤 ${channel.subs_28.toLocaleString()} ${channel.subs_28 > channel.subs_prev_28 ? "📈" : "📉"}</div>
+                    <div class="metric">🎥 ${channel.uploads_28} ${channel.uploads_28 > channel.uploads_prev_28 ? "📈" : "📉"}</div>
+                `;
+            });
+    </script>
 </body>
 </html>
