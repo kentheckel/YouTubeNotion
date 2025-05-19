@@ -64,8 +64,6 @@ def find_existing_row(channel_name, date_str):
     return None
 
 def upsert_notion_row(channel, stats, analytics, date_str):
-    page_id = find_existing_row(channel, date_str)
-
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
         "Notion-Version": "2022-06-28",
@@ -73,6 +71,7 @@ def upsert_notion_row(channel, stats, analytics, date_str):
     }
 
     payload = {
+        "parent": {"database_id": NOTION_DATABASE_ID},
         "properties": {
             "Channel Name": {"title": [{"text": {"content": channel}}]},
             "Date": {"date": {"start": date_str}},
@@ -84,6 +83,10 @@ def upsert_notion_row(channel, stats, analytics, date_str):
             "Uploads (28 Days)": {"number": analytics["uploads_28"]}
         }
     }
+
+    res = requests.post("https://api.notion.com/v1/pages", headers=headers, json=payload)
+    print(f"Notion response for {channel}:", res.status_code, res.text)
+
 
     if page_id:
         url = f"https://api.notion.com/v1/pages/{page_id}"
