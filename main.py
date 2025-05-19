@@ -30,12 +30,18 @@ def get_channel_stats(channel_id):
         "key": YOUTUBE_API_KEY
     }
     res = requests.get(url, params=params).json()
-    stats = res["items"][0]["statistics"]
-    return {
-        "subs": int(stats["subscriberCount"]),
-        "views": int(stats["viewCount"]),
-        "videos": int(stats["videoCount"])
-    }
+
+    try:
+        stats = res["items"][0]["statistics"]
+        return {
+            "subs": int(stats["subscriberCount"]),
+            "views": int(stats["viewCount"]),
+            "videos": int(stats["videoCount"])
+        }
+    except (KeyError, IndexError):
+        print(f"⚠️ Failed to get stats for {channel_id}: {res}")
+        return {"subs": 0, "views": 0, "videos": 0}
+
 
 def get_analytics(channel_id, start_date, end_date):
     try:
@@ -74,29 +80,29 @@ def get_analytics(channel_id, start_date, end_date):
         print(f"⚠️ Failed to get analytics for {channel_id}: {e}")
         return {"views_28": 0, "subs_28": 0, "uploads_28": 0}
 
-def get_uploads_in_range(channel_id, start_date, end_date, creds):
-    youtube = build("youtube", "v3", credentials=creds)
-    upload_count = 0
-    next_page_token = None
+# def get_uploads_in_range(channel_id, start_date, end_date, creds):
+#     youtube = build("youtube", "v3", credentials=creds)
+#     upload_count = 0
+#     next_page_token = None
 
-    while True:
-        response = youtube.search().list(
-            part="snippet",
-            channelId=channel_id,
-            maxResults=50,
-            order="date",
-            publishedAfter=start_date + "T00:00:00Z",
-            publishedBefore=end_date + "T23:59:59Z",
-            type="video",
-            pageToken=next_page_token
-        ).execute()
+#     while True:
+#         response = youtube.search().list(
+#             part="snippet",
+#             channelId=channel_id,
+#             maxResults=50,
+#             order="date",
+#             publishedAfter=start_date + "T00:00:00Z",
+#             publishedBefore=end_date + "T23:59:59Z",
+#             type="video",
+#             pageToken=next_page_token
+#         ).execute()
 
-        upload_count += len(response.get("items", []))
-        next_page_token = response.get("nextPageToken")
-        if not next_page_token:
-            break
+#         upload_count += len(response.get("items", []))
+#         next_page_token = response.get("nextPageToken")
+#         if not next_page_token:
+#             break
 
-    return upload_count
+#     return upload_count
 
 def find_existing_row(channel_name, date_str):
     url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
