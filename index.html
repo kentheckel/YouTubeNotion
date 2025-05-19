@@ -3,84 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YouTube Analytics Dashboard</title>
+  <title>YouTube Channel Widgets</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: white;
-      margin: 0;
+      max-width: 800px;
+      margin: 40px auto;
       padding: 20px;
-    }
-
-    .dashboard {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .widget {
       background: white;
-      border-radius: 16px;
-      box-shadow: none;
-      padding: 20px;
+    }
+    h1 {
+      color: #333;
       text-align: center;
     }
-
-    .widget img {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      margin-bottom: 12px;
-      object-fit: cover;
+    .widget-list {
+      list-style: none;
+      padding: 0;
     }
-
-    .widget h2 {
-      font-size: 20px;
+    .widget-link {
+      display: block;
+      padding: 15px 20px;
       margin: 10px 0;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #333;
+      transition: all 0.2s ease;
     }
-
-    .metric {
-      font-size: 16px;
-      margin: 6px 0;
+    .widget-link:hover {
+      background: #f9f9f9;
+      transform: translateY(-2px);
     }
   </style>
 </head>
 <body>
-  <div class="dashboard" id="dashboard"></div>
-
-  <script>
-    const iconMap = {
-      "All The Smoke": "ATS_Icon.jpg",
-      "All The Smoke Fight": "ATSF_Icon.jpg",
-      "KG Certified": "KG_Icon.jpg",
-      "Morning Kombat": "MK_Icon.jpg",
-      "Ring Champs": "RC_Icon.jpg",
-      "Victor Oladipo": "TIC_Icon.jpg",
-      "San Antonio Spurs": "SAS_Icon.jpg"
-    };
-
-    fetch('data.json')
-      .then(res => res.json())
-      .then(data => {
-        const dashboard = document.getElementById('dashboard');
-        
-        data.forEach(channel => {
-          const widget = document.createElement('div');
-          widget.className = 'widget';
-          
-          widget.innerHTML = `
-            <img src="${iconMap[channel.name]}" alt="${channel.name}" />
-            <h2>${channel.name}</h2>
-            <div class="metric">👁 Views: ${channel.views_28.toLocaleString()} ${channel.views_28 > channel.views_prev_28 ? "📈" : "📉"}</div>
-            <div class="metric">👤 Subs: ${channel.subs_28.toLocaleString()} ${channel.subs_28 > channel.subs_prev_28 ? "📈" : "📉"}</div>
-            <div class="metric">🎥 Uploads: ${channel.uploads_28} ${channel.uploads_28 > channel.uploads_prev_28 ? "📈" : "📉"}</div>
-          `;
-          
-          dashboard.appendChild(widget);
-        });
-      });
-  </script>
+  <h1>YouTube Channel Widgets</h1>
+  <ul class="widget-list">
+    <li><a href="all-the-smoke.html" class="widget-link">All The Smoke</a></li>
+    <li><a href="all-the-smoke-fight.html" class="widget-link">All The Smoke Fight</a></li>
+    <li><a href="kg-certified.html" class="widget-link">KG Certified</a></li>
+    <li><a href="morning-kombat.html" class="widget-link">Morning Kombat</a></li>
+    <li><a href="ring-champs.html" class="widget-link">Ring Champs</a></li>
+    <li><a href="victor-oladipo.html" class="widget-link">The Inner Court</a></li>
+    <li><a href="san-antonio-spurs.html" class="widget-link">San Antonio Spurs</a></li>
+  </ul>
 </body>
 </html>
