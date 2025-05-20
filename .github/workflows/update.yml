@@ -33,6 +33,13 @@ jobs:
           NOTION_VIDEO_DB_ID: ${{ secrets.NOTION_VIDEO_DB_ID }}
         run: python video_tracker.py
 
+      - name: Run video importer
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_VIDEO_DB_ID: ${{ secrets.NOTION_VIDEO_DB_ID }}
+        run: python video_importer.py
+
+
       - name: Commit updated data.json
         run: |
           git config user.name "github-actions"
