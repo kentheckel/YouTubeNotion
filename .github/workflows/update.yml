@@ -27,6 +27,12 @@ jobs:
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: python main.py
 
+      - name: Run video tracker script
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_VIDEO_DB_ID: ${{ secrets.NOTION_VIDEO_DB_ID }}
+        run: python video_tracker.py
+
       - name: Commit updated data.json
         run: |
           git config user.name "github-actions"
