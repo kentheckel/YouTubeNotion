@@ -105,6 +105,30 @@ def create_notion_video_row(video, channel_name):
     res = requests.post(url, headers=headers, json=payload)
     print(f"📹 Added video: {video['snippet']['title']} ({res.status_code})")
 
+def get_uploads_in_range(channel_id, start_date, end_date, creds):
+    youtube = build("youtube", "v3", credentials=creds)
+    upload_count = 0
+    next_page_token = None
+
+    while True:
+        response = youtube.search().list(
+            part="snippet",
+            channelId=channel_id,
+            maxResults=50,
+            order="date",
+            publishedAfter=start_date + "T00:00:00Z",
+            publishedBefore=end_date + "T23:59:59Z",
+            type="video",
+            pageToken=next_page_token
+        ).execute()
+
+        upload_count += len(response.get("items", []))
+        next_page_token = response.get("nextPageToken")
+        if not next_page_token:
+            break
+
+    return upload_count
+
 def run_video_tracker():
     for channel_name, channel_id in CHANNELS.items():
         creds = load_token(channel_id)
