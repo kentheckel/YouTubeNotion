@@ -103,7 +103,11 @@ def create_notion_video_row(video, channel_name):
     }
 
     res = requests.post(url, headers=headers, json=payload)
-    print(f"📹 Added video: {video['snippet']['title']} ({res.status_code})")
+    if res.status_code != 200:
+        print(f"❌ Failed to create row for {video['snippet']['title']}: {res.status_code} | {res.text}")
+    else:
+        print(f"✅ Added video: {video['snippet']['title']}")
+
 
 def get_uploads_in_range(channel_id, start_date, end_date, creds):
     youtube = build("youtube", "v3", credentials=creds)
