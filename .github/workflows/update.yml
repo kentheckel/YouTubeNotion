@@ -26,18 +26,21 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: python main.py
+        continue-on-error: true   # ✅ allows next step to run even if this fails
 
       - name: Run video tracker script
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_VIDEO_DB_ID: ${{ secrets.NOTION_VIDEO_DB_ID }}
         run: python video_tracker.py
+        continue-on-error: true   # ✅ allows next step to run even if this fails
 
       - name: Run video importer
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_VIDEO_DB_ID: ${{ secrets.NOTION_VIDEO_DB_ID }}
         run: python video_importer.py
+        continue-on-error: true   # ✅ allows next step to run even if this fails
 
 
       - name: Commit updated data.json
