@@ -52,7 +52,7 @@
     <div class="widget" id="widget"></div>
 
     <script>
-        fetch('data.json')
+        fetch('public/data.json')
             .then(res => res.json())
             .then(data => {
                 const channel = data.find(c => c.name === "Ring Champs");
