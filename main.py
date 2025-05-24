@@ -5,6 +5,7 @@ import os
 
 from googleapiclient.discovery import build
 import pickle
+import json
 
 # --- CONFIGURATION ---
 YOUTUBE_API_KEY = os.environ["YOUTUBE_API_KEY"]
@@ -23,6 +24,10 @@ CHANNELS = {
 
 # --- HELPERS ---
 def get_channel_stats(channel_id):
+    """
+    Fetches basic channel statistics (subscribers, total views, total videos)
+    from the YouTube Data API v3.
+    """
     url = "https://www.googleapis.com/youtube/v3/channels"
     params = {
         "part": "statistics",
@@ -44,6 +49,11 @@ def get_channel_stats(channel_id):
 
 
 def get_analytics(channel_id, start_date, end_date):
+    """
+    Fetches general analytics (views, subscribers gained/lost, uploads)
+    for a given date range using the YouTube Analytics API.
+    NOTE: This function is largely superseded by get_advanced_analytics for specific ranges.
+    """
     try:
         token_path = f"tokens/token_{channel_id}.pickle"
         with open(token_path, "rb") as token_file:
@@ -81,6 +91,10 @@ def get_analytics(channel_id, start_date, end_date):
         return {"views_28": 0, "subs_28": 0, "uploads_28": 0}
 
 def get_uploads_in_range(channel_id, start_date, end_date, creds):
+    """
+    Counts the number of videos uploaded by a channel within a specified date range.
+    Uses the YouTube Data API v3.
+    """
     youtube = build("youtube", "v3", credentials=creds)
     upload_count = 0
     next_page_token = None
@@ -105,6 +119,10 @@ def get_uploads_in_range(channel_id, start_date, end_date, creds):
     return upload_count
 
 def find_existing_row(channel_name, date_str):
+    """
+    Checks if a Notion page for the given channel and date already exists
+    in the specified database.
+    """
     url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
@@ -112,7 +130,27 @@ def find_existing_row(channel_name, date_str):
         "Content-Type": "application/json"
     }
 
-    response = requests.post(url, headers=headers).json()
+    # Notion API query to find pages with matching channel name and date
+    query_payload = {
+        "filter": {
+            "and": [
+                {
+                    "property": "Channel Name",
+                    "title": {
+                        "equals": channel_name
+                    }
+                },
+                {
+                    "property": "Date",
+                    "date": {
+                        "equals": date_str
+                    }
+                }
+            ]
+        }
+    }
+
+    response = requests.post(url, headers=headers, json=query_payload).json()
     pages = response.get("results", [])
 
     for page in pages:
@@ -130,11 +168,76 @@ def find_existing_row(channel_name, date_str):
 
     return None, ""
 
+def get_revenue_analytics(channel_id, start_date, end_date):
+    """
+    Fetches estimated revenue and CPM for a given channel and date range
+    using the YouTube Analytics API.
+    Requires appropriate permissions for the linked Google account.
+    """
+    try:
+        token_path = f"tokens/token_{channel_id}.pickle"
+        with open(token_path, "rb") as token_file:
+            creds = pickle.load(token_file)
+    except FileNotFoundError:
+        print(f"⚠️ No token found for {channel_id} for revenue analytics.")
+        return {"estimated_revenue": 0, "cpm": 0}
+
+    youtube_analytics = build("youtubeAnalytics", "v2", credentials=creds)
+
+    try:
+        response = youtube_analytics.reports().query(
+            ids=f"channel=={channel_id}",
+            startDate=start_date,
+            endDate=end_date,
+            metrics="estimatedRevenue,cpm", # Metrics for revenue and CPM
+            dimensions="day",
+            sort="day"
+        ).execute()
+
+        rows = response.get("rows", [])
+        estimated_revenue = sum(row[1] for row in rows) if rows else 0
+        # Calculate simple average CPM if data exists, otherwise 0
+        cpm = sum(row[2] for row in rows) / len(rows) if rows else 0
+
+        return {
+            "estimated_revenue": estimated_revenue,
+            "cpm": cpm
+        }
+
+    except Exception as e:
+        print(f"⚠️ Failed to get revenue analytics for {channel_id}: {e}")
+        return {"estimated_revenue": 0, "cpm": 0}
+
+def get_channel_icon(channel_id):
+    """
+    Fetches the channel icon URL from the YouTube Data API v3.
+    """
+    url = "https://www.googleapis.com/youtube/v3/channels"
+    params = {
+        "part": "snippet",
+        "id": channel_id,
+        "key": YOUTUBE_API_KEY
+    }
+    res = requests.get(url, params=params).json()
+
+    try:
+        # Prioritize high quality thumbnail if available, otherwise default
+        thumbnail_url = res["items"][0]["snippet"]["thumbnails"]["high"]["url"]
+    except (KeyError, IndexError):
+        try:
+            thumbnail_url = res["items"][0]["snippet"]["thumbnails"]["default"]["url"]
+        except (KeyError, IndexError):
+            print(f"⚠️ Failed to get channel icon for {channel_id}: {res}")
+            thumbnail_url = "" # Return empty string if no icon found
+    return thumbnail_url
 
 
-
-def upsert_notion_row(channel, stats, analytics, yearly, date_str):
-    page_id, icon_url = find_existing_row(channel, date_str)
+def upsert_notion_row(channel, stats, analytics, yearly, revenue_28, revenue_prev_28, revenue_365, revenue_yearly, channel_icon_url, date_str):
+    """
+    Creates or updates a row in the Notion database with the fetched YouTube data,
+    including new revenue statistics and channel icon.
+    """
+    page_id, existing_icon_url = find_existing_row(channel, date_str)
 
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
@@ -161,8 +264,49 @@ def upsert_notion_row(channel, stats, analytics, yearly, date_str):
         "Views (2023)": {"number": yearly["views_2023"]},
         "Subs (2023)": {"number": yearly["subs_2023"]},
         "Views (2024)": {"number": yearly["views_2024"]},
-        "Subs (2024)": {"number": yearly["subs_2024"]}
+        "Subs (2024)": {"number": yearly["subs_2024"]},
+        # New Revenue and CPM properties
+        "Revenue (28 Days)": {"number": revenue_28["estimated_revenue"]},
+        "CPM (28 Days)": {"number": revenue_28["cpm"]},
+        "Revenue (Prev 28 Days)": {"number": revenue_prev_28["estimated_revenue"]},
+        "CPM (Prev 28 Days)": {"number": revenue_prev_28["cpm"]},
+        "Revenue (365 Days)": {"number": revenue_365["estimated_revenue"]},
+        "CPM (365 Days)": {"number": revenue_365["cpm"]},
+        "Revenue (2022)": {"number": revenue_yearly["estimated_revenue_2022"]},
+        "CPM (2022)": {"number": revenue_yearly["cpm_2022"]},
+        "Revenue (2023)": {"number": revenue_yearly["estimated_revenue_2023"]},
+        "CPM (2023)": {"number": revenue_yearly["cpm_2023"]},
+        "Revenue (2024)": {"number": revenue_yearly["estimated_revenue_2024"]},
+        "CPM (2024)": {"number": revenue_yearly["cpm_2024"]}
     }
+
+    # Add Channel Icon property if a URL is available
+    if channel_icon_url:
+        properties["Channel Icon"] = {
+            "files": [
+                {
+                    "name": f"{channel} Icon", # Optional name for the file in Notion
+                    "type": "external",
+                    "external": {
+                        "url": channel_icon_url
+                    }
+                }
+            ]
+        }
+    # If no new icon URL is provided but an existing one was found, keep it
+    elif existing_icon_url:
+        properties["Channel Icon"] = {
+            "files": [
+                {
+                    "name": f"{channel} Icon",
+                    "type": "external",
+                    "external": {
+                        "url": existing_icon_url
+                    }
+                }
+            ]
+        }
+
 
     payload = {"properties": properties}
 
@@ -178,6 +322,10 @@ def upsert_notion_row(channel, stats, analytics, yearly, date_str):
 
 
 def fetch_analytics_for_range(creds, channel_id, start_date, end_date):
+    """
+    Helper function to fetch views and subscribers for a given date range.
+    Used by get_advanced_analytics and get_yearly_analytics.
+    """
     youtube_analytics = build("youtubeAnalytics", "v2", credentials=creds)
     response = youtube_analytics.reports().query(
         ids=f"channel=={channel_id}",
@@ -194,6 +342,9 @@ def fetch_analytics_for_range(creds, channel_id, start_date, end_date):
     return views, subs
 
 def get_advanced_analytics(channel_id):
+    """
+    Fetches detailed analytics for 28-day, previous 28-day, and 365-day periods.
+    """
     try:
         token_path = f"tokens/token_{channel_id}.pickle"
         with open(token_path, "rb") as token_file:
@@ -245,6 +396,9 @@ def get_advanced_analytics(channel_id):
         }
 
 def get_yearly_analytics(channel_id):
+    """
+    Fetches yearly views and subscribers for 2022, 2023, and 2024.
+    """
     try:
         token_path = f"tokens/token_{channel_id}.pickle"
         with open(token_path, "rb") as token_file:
@@ -284,46 +438,145 @@ def get_yearly_analytics(channel_id):
             "views_2024": 0, "subs_2024": 0
         }
 
+def get_yearly_revenue_analytics(channel_id):
+    """
+    Fetches yearly estimated revenue and CPM for 2022, 2023, and 2024.
+    """
+    try:
+        token_path = f"tokens/token_{channel_id}.pickle"
+        with open(token_path, "rb") as token_file:
+            creds = pickle.load(token_file)
+    except FileNotFoundError:
+        print(f"⚠️ No token found for {channel_id} for yearly revenue analytics.")
+        return {
+            "estimated_revenue_2022": 0, "cpm_2022": 0,
+            "estimated_revenue_2023": 0, "cpm_2023": 0,
+            "estimated_revenue_2024": 0, "cpm_2024": 0
+        }
+
+    def fetch_revenue_for_year(year):
+        start = f"{year}-01-01"
+        end = f"{year}-12-31"
+        return get_revenue_analytics(channel_id, start, end)
+
+    try:
+        revenue_2022 = fetch_revenue_for_year(2022)
+        revenue_2023 = fetch_revenue_for_year(2023)
+        revenue_2024 = fetch_revenue_for_year(2024)
+
+        return {
+            "estimated_revenue_2022": revenue_2022["estimated_revenue"],
+            "cpm_2022": revenue_2022["cpm"],
+            "estimated_revenue_2023": revenue_2023["estimated_revenue"],
+            "cpm_2023": revenue_2023["cpm"],
+            "estimated_revenue_2024": revenue_2024["estimated_revenue"],
+            "cpm_2024": revenue_2024["cpm"]
+        }
+
+    except Exception as e:
+        print(f"⚠️ Failed yearly revenue analytics for {channel_id}: {e}")
+        return {
+            "estimated_revenue_2022": 0, "cpm_2022": 0,
+            "estimated_revenue_2023": 0, "cpm_2023": 0,
+            "estimated_revenue_2024": 0, "cpm_2024": 0
+        }
+
 # --- MAIN ---
 if __name__ == "__main__":
+    # Get today's date in 'YYYY-MM-DD' format, adjusted for US/Eastern timezone
     today = datetime.now(pytz.timezone("US/Eastern")).strftime("%Y-%m-%d")
-    start_28_days = (datetime.now() - timedelta(days=28)).strftime("%Y-%m-%d")
-
+    
     for channel_name, channel_id in CHANNELS.items():
+        # Fetch general channel statistics
         stats = get_channel_stats(channel_id)
+        # Fetch advanced analytics (views, subs, uploads for various periods)
         analytics = get_advanced_analytics(channel_id)
+        # Fetch yearly views and subscribers
         yearly_analytics = get_yearly_analytics(channel_id)
-        upsert_notion_row(channel_name, stats, analytics, yearly_analytics, today)
 
-        # Debug output per channel
-        print(f"Processing: {channel_name}")
+        # --- Revenue data fetching ---
+        # Define date ranges for revenue analytics
+        today_date_str = datetime.utcnow().date().isoformat()
+        start_28_days_ago = (datetime.utcnow().date() - timedelta(days=28)).isoformat()
+        start_prev_28_days_ago = (datetime.utcnow().date() - timedelta(days=56)).isoformat()
+        end_prev_28_days_ago = (datetime.utcnow().date() - timedelta(days=29)).isoformat()
+        start_365_days_ago = (datetime.utcnow().date() - timedelta(days=365)).isoformat()
+
+        # Fetch revenue for specified periods
+        revenue_28_days = get_revenue_analytics(channel_id, start_28_days_ago, today_date_str)
+        revenue_prev_28_days = get_revenue_analytics(channel_id, start_prev_28_days_ago, end_prev_28_days_ago)
+        revenue_365_days = get_revenue_analytics(channel_id, start_365_days_ago, today_date_str)
+        yearly_revenue_analytics = get_yearly_revenue_analytics(channel_id)
+
+        # Fetch channel icon
+        channel_icon_url = get_channel_icon(channel_id)
+
+        # Upsert (update or insert) the data into Notion
+        upsert_notion_row(channel_name, stats, analytics, yearly_analytics,
+                          revenue_28_days, revenue_prev_28_days, revenue_365_days, yearly_revenue_analytics,
+                          channel_icon_url, today) # Pass channel_icon_url here
+
+        # Debug output per channel to show fetched data
+        print(f"\n--- Processing: {channel_name} ---")
         print(f"Stats: {stats}")
         print(f"Analytics (28-day & previous): {analytics}")
         print(f"Yearly Analytics: {yearly_analytics}")
+        print(f"Revenue (28-day): {revenue_28_days}")
+        print(f"Revenue (Prev 28-day): {revenue_prev_28_days}")
+        print(f"Revenue (365-day): {revenue_365_days}")
+        print(f"Yearly Revenue: {yearly_revenue_analytics}")
+        print(f"Channel Icon URL: {channel_icon_url}")
 
-    print("✅ Finished processing all channels.")
 
-import json
+    print("\n✅ Finished processing all channels.")
 
-# Final export list
+# --- Prepare data for widget export (data.json) ---
 export_data = []
 
 for channel_name, channel_id in CHANNELS.items():
+    # Re-fetch data for export to ensure consistency (or reuse from main loop if preferred)
     stats = get_channel_stats(channel_id)
     analytics = get_advanced_analytics(channel_id)
     yearly_analytics = get_yearly_analytics(channel_id)
-    page_id, icon_url = find_existing_row(channel_name, today)
+
+    today_date_str = datetime.utcnow().date().isoformat()
+    start_28_days_ago = (datetime.utcnow().date() - timedelta(days=28)).isoformat()
+    start_prev_28_days_ago = (datetime.utcnow().date() - timedelta(days=56)).isoformat()
+    end_prev_28_days_ago = (datetime.utcnow().date() - timedelta(days=29)).isoformat()
+    start_365_days_ago = (datetime.utcnow().date() - timedelta(days=365)).isoformat()
+
+    revenue_28_days = get_revenue_analytics(channel_id, start_28_days_ago, today_date_str)
+    revenue_prev_28_days = get_revenue_analytics(channel_id, start_prev_28_days_ago, end_prev_28_days_ago)
+    revenue_365_days = get_revenue_analytics(channel_id, start_365_days_ago, today_date_str)
+    yearly_revenue_analytics = get_yearly_revenue_analytics(channel_id)
+    
+    channel_icon_url = get_channel_icon(channel_id) # Fetch icon for export
+
+    # Find existing row to get icon URL if available
+    page_id, icon_url_from_notion = find_existing_row(channel_name, today) # Renamed to avoid conflict
 
     # Add all values into exportable JSON
     export_data.append({
         "name": channel_name,
-        "icon": icon_url,
+        "icon": channel_icon_url if channel_icon_url else icon_url_from_notion, # Prefer newly fetched, fallback to existing Notion icon
         "views_28": analytics["views_28"],
         "views_prev_28": analytics["views_prev_28"],
         "subs_28": analytics["subs_28"],
         "subs_prev_28": analytics["subs_prev_28"],
         "uploads_28": analytics["uploads_28"],
-        "uploads_prev_28": analytics["uploads_prev_28"]
+        "uploads_prev_28": analytics["uploads_prev_28"],
+        "revenue_28": revenue_28_days["estimated_revenue"],
+        "cpm_28": revenue_28_days["cpm"],
+        "revenue_prev_28": revenue_prev_28_days["estimated_revenue"],
+        "cpm_prev_28": revenue_prev_28_days["cpm"],
+        "revenue_365": revenue_365_days["estimated_revenue"],
+        "cpm_365": revenue_365_days["cpm"],
+        "revenue_2022": yearly_revenue_analytics["estimated_revenue_2022"],
+        "cpm_2022": yearly_revenue_analytics["cpm_2022"],
+        "revenue_2023": yearly_revenue_analytics["estimated_revenue_2023"],
+        "cpm_2023": yearly_revenue_analytics["cpm_2023"],
+        "revenue_2024": yearly_revenue_analytics["estimated_revenue_2024"],
+        "cpm_2024": yearly_revenue_analytics["cpm_2024"]
     })
 
 # Write data.json for widget
