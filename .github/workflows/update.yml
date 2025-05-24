@@ -20,6 +20,23 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # NEW STEP: Set up Google API tokens from secrets
+      - name: Set up Google API Tokens
+        run: |
+          mkdir -p tokens # Create the tokens directory if it doesn't exist
+          # Decode and save each Base64 token from GitHub Secrets into .pickle files
+          # Make sure these secret names EXACTLY match what you created in GitHub Settings
+          echo "${{ secrets.TOKEN_UC2OZVS4PG2K3UFLW6_0AYCQ }}" | base64 --decode > tokens/token_UC2ozVs4pg2K3uFLw6-0ayCQ.pickle
+          echo "${{ secrets.TOKEN_UCA9W_CPWWBDLWWBWHOD1YWOG }}" | base64 --decode > tokens/token_UCa9W_cPwwbDlwBwHOd1YWoQ.pickle
+          echo "${{ secrets.TOKEN_UC9QY3SHRR5WIL_RKYCMCNCW }}" | base64 --decode > tokens/token_UC9QY3sHrr5wil-rkYcmcNcw.pickle
+          echo "${{ secrets.TOKEN_UCFPOJND0D4K1H9A6UOLIKCG }}" | base64 --decode > tokens/token_UCFPoJNd0d4k1H9A6UOLIKCG.pickle
+          echo "${{ secrets.TOKEN_UCBX_QX_HX5QTUEL72YVYN_A }}" | base64 --decode > tokens/token_UCBX_Qx_Hx5QTuEL72YVYN_A.pickle
+          echo "${{ secrets.TOKEN_UCF5FCEEALUCA53OUW3MC8TIQ }}" | base64 --decode > tokens/token_UCf5fcEEALUCA53oUW3mc8tiQ.pickle
+          echo "${{ secrets.TOKEN_UCEZHE_0COHQEL1LGFa2EMQW }}" | base64 --decode > tokens/token_UCEZHE_0CoHqeL1LGFa2EmQw.pickle
+          # IMPORTANT: Add a line for *every* channel token you have as a secret.
+          # Double-check that the secret names (e.g., TOKEN_UC2OZVS4PG2K3UFLW6_0AYCQ)
+          # exactly match the names you used when creating them in GitHub Secrets.
+
       - name: Run updater script
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
@@ -41,7 +58,6 @@ jobs:
           NOTION_VIDEO_DB_ID: ${{ secrets.NOTION_VIDEO_DB_ID }}
         run: python upload_to_notion.py
         continue-on-error: true   # ✅ allows next step to run even if this fails
-
 
       - name: Commit updated data.json
         run: |
