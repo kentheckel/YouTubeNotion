@@ -158,8 +158,18 @@ def find_existing_row(channel_name, date_str):
         title_prop = props.get("Channel Name", {}).get("title", [])
         date_object = props.get("Date", {}).get("date")
         icon_files = props.get("Channel Icon", {}).get("files", [])
-        icon_url = icon_files[0]["file"]["url"] if icon_files else ""
+        icon_url = "" # Initialize icon_url
 
+        # Safely extract icon URL based on its type (external vs. file)
+        if icon_files:
+            first_file = icon_files[0]
+            if first_file.get("type") == "external":
+                icon_url = first_file.get("external", {}).get("url", "")
+            elif first_file.get("type") == "file":
+                # This case is for files uploaded directly to Notion, which your script doesn't do.
+                # However, it's good to handle defensively.
+                icon_url = first_file.get("file", {}).get("url", "")
+        
         title = title_prop[0]["text"]["content"] if title_prop else ""
         date = date_object.get("start") if date_object else ""
 
@@ -483,7 +493,7 @@ def get_yearly_revenue_analytics(channel_id):
 
 # --- MAIN ---
 if __name__ == "__main__":
-    # Get today's date in 'YYYY-MM-DD' format, adjusted for US/Eastern timezone
+    # Get today's date in 'YYYY-MM-%d' format, adjusted for US/Eastern timezone
     today = datetime.now(pytz.timezone("US/Eastern")).strftime("%Y-%m-%d")
     
     for channel_name, channel_id in CHANNELS.items():
@@ -583,4 +593,3 @@ for channel_name, channel_id in CHANNELS.items():
 os.makedirs("public", exist_ok=True)
 with open("public/data.json", "w") as f:
     json.dump(export_data, f, indent=2)
-
