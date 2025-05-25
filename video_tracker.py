@@ -32,68 +32,138 @@ CHANNELS = {
     # "San Antonio Spurs": "UCEZHE-0CoHqeL1LGFa2EmQw"
 }
 
+# --- Helper: Script directory for reliable pathing ---
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+# TOKEN_DIR should be relative to SCRIPT_DIR if it's not an absolute path.
+# If TOKEN_DIR is just "tokens", it implies "tokens" subdirectory next to the script.
+TOKEN_DIR = os.path.join(SCRIPT_DIR, "tokens") # Ensure TOKEN_DIR is robust
+
 def load_token(channel_id):
-    token_path = os.path.join(TOKEN_DIR, f"token_{channel_id}.pickle")
+    # token_path = os.path.join(TOKEN_DIR, f"token_{channel_id}.pickle") # TOKEN_DIR is now set above
+    # The above line is fine, this is just to show the SCRIPT_DIR based path construction
+    token_filename = f"token_{channel_id}.pickle"
+    token_path = os.path.join(TOKEN_DIR, token_filename)
+
     if not os.path.exists(token_path):
-        print(f"⚠️ No token found for {channel_id}")
+        print(f"⚠️ No token found for {channel_id} at path {token_path}")
         return None
     with open(token_path, "rb") as token_file:
         return pickle.load(token_file)
 
-def fetch_recent_videos(creds, channel_id, days=1, max_results=5):
-    """Only fetch videos from the past day to limit API calls"""
+def fetch_channel_videos(creds, channel_id, lookback_days=None, page_size=10, max_total_videos=1000):
+    """
+    Fetches videos for a channel.
+    If lookback_days is None, attempts to fetch all videos (up to max_total_videos).
+    If lookback_days is an int, fetches videos published in the last N days.
+    Uses pagination to retrieve videos.
+    """
     try:
         youtube = build("youtube", "v3", credentials=creds)
-        today = datetime.now(timezone.utc)
-        start_datetime = today - timedelta(days=days) # Calculate the datetime object
-        start = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ') # Format as YYYY-MM-DDTHH:MM:SSZ
         
-        videos = []
-        request = youtube.search().list(
-            part="snippet",
-            channelId=channel_id,
-            maxResults=max_results,  # Reduced to save quota
-            publishedAfter=start,
-            type="video",
-            order="date"
-        )
-        response = request.execute()
+        published_after_filter = None
+        if lookback_days is not None and lookback_days > 0:
+            today = datetime.now(timezone.utc)
+            start_datetime = today - timedelta(days=lookback_days)
+            published_after_filter = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+            print(f"  Fetching videos published after: {published_after_filter}")
+        else:
+            print(f"  Fetching all videos (no date limit).")
+
+        all_videos = []
+        next_page_token = None
+        videos_fetched_count = 0
+
+        while True:
+            if videos_fetched_count >= max_total_videos:
+                print(f"  Reached max_total_videos limit of {max_total_videos}. Stopping video fetch for this channel.")
+                break
+
+            actual_page_size = min(page_size, max_total_videos - videos_fetched_count)
+            if actual_page_size <= 0: # Should not happen if logic is correct, but as a safe guard
+                break
+
+            request_params = {
+                "part": "snippet",
+                "channelId": channel_id,
+                "maxResults": actual_page_size,
+                "type": "video",
+                "order": "date", # Most recent first
+                "pageToken": next_page_token
+            }
+            if published_after_filter:
+                request_params["publishedAfter"] = published_after_filter
+            
+            request = youtube.search().list(**request_params)
+            response = request.execute()
+            
+            for item in response.get("items", []):
+                all_videos.append({
+                    "videoId": item["id"]["videoId"],
+                    "title": item["snippet"]["title"],
+                    "publishedAt": item["snippet"]["publishedAt"]
+                })
+                videos_fetched_count += 1
+            
+            next_page_token = response.get("nextPageToken")
+            print(f"  Fetched page: {videos_fetched_count} videos so far for channel {channel_id}.")
+            
+            if not next_page_token:
+                print(f"  No more pages to fetch for channel {channel_id}.")
+                break
         
-        for item in response.get("items", []):
-            videos.append({
-                "videoId": item["id"]["videoId"],
-                "title": item["snippet"]["title"],
-                "publishedAt": item["snippet"]["publishedAt"]
-            })
-        return videos
+        print(f"  Total videos retrieved for channel {channel_id}: {len(all_videos)}")
+        return all_videos
+        
     except Exception as e:
         if "quota" in str(e).lower() or ("HttpError 403" in str(e) and "quota" in str(e).lower()):
-            print(f"🟡 YouTube API quota likely exceeded for channel {channel_id} while fetching recent videos: {str(e)}")
-            return None
+            print(f"🟡 YouTube API quota likely exceeded for channel {channel_id} while fetching videos: {str(e)}")
+            return None # Indicate quota issue
         else:
             print(f"❌ Error fetching videos for channel {channel_id}: {str(e)}")
-            return []
+            return [] # Return empty list on other errors
 
 def fetch_video_details(creds, video_ids):
-    """Get detailed video information"""
+    """Get detailed video information, handling batching for large lists of IDs."""
     try:
         if not video_ids:
             return []
             
         youtube = build("youtube", "v3", credentials=creds)
-        request = youtube.videos().list(
-            part="statistics,snippet,contentDetails",
-            id=",".join(video_ids)
-        )
-        response = request.execute()
-        return response.get("items", [])
+        all_video_items = []
+        
+        # The YouTube API v3 videos().list endpoint can take max 50 IDs at a time.
+        chunk_size = 50 
+        
+        for i in range(0, len(video_ids), chunk_size):
+            video_ids_chunk = video_ids[i:i + chunk_size]
+            print(f"    Fetching details for video ID chunk: {i//chunk_size + 1} (IDs {i+1} to {min(i+chunk_size, len(video_ids))})") # Added print
+            
+            try:
+                request = youtube.videos().list(
+                    part="statistics,snippet,contentDetails",
+                    id=",".join(video_ids_chunk)
+                )
+                response = request.execute()
+                all_video_items.extend(response.get("items", []))
+            except Exception as chunk_e:
+                # Handle error for a specific chunk, e.g., log it and continue if appropriate
+                # This allows the process to continue with other chunks if one fails.
+                print(f"    ❌ Error fetching details for chunk of video IDs (starting with {video_ids_chunk[0]}...): {chunk_e}")
+                # Optionally, re-raise if any chunk failure should stop the whole process:
+                # raise chunk_e 
+                # For now, we'll let it try other chunks. If quota is hit, outer handler will catch it.
+
+        return all_video_items
+        
     except Exception as e:
+        # This will catch broader errors, like quota exceeded before or during chunk processing
         if "quota" in str(e).lower() or ("HttpError 403" in str(e) and "quota" in str(e).lower()):
-            print(f"🟡 YouTube API quota likely exceeded while fetching details for videos {','.join(video_ids)}: {str(e)}")
-            return None
+            # If it's a quota error, it likely applies to the whole operation now, so return None
+            print(f"🟡 YouTube API quota likely exceeded while fetching video details: {str(e)}")
+            return None 
         else:
-            print(f"❌ Error fetching video details for videos {','.join(video_ids)}: {str(e)}")
-            return []
+            print(f"❌ General error in fetch_video_details for IDs starting with {video_ids[0] if video_ids else 'N/A'}: {str(e)}")
+            return [] # Return empty on other general errors
 
 def parse_duration(duration):
     try:
@@ -102,13 +172,51 @@ def parse_duration(duration):
     except:
         return 0, 0
 
-def get_video_format_details(thumbnails, duration_seconds):
+def get_video_format_details(video_id, thumbnails, duration_seconds):
     """
-    Determines if a video is likely a Short based on aspect ratio and duration.
+    Determines if a video is likely a Short based on aspect ratio and duration,
+    with a primary check using the /shorts/ URL endpoint.
     Returns the format_type_string: "Short" or "Long Form".
+    video_id: The YouTube video ID.
+    thumbnails: The video's thumbnail data from the API (used as a fallback).
+    duration_seconds: The video's duration in seconds (used as a fallback).
     """
+    # Primary Method: Check /shorts/ URL redirect behavior
+    try:
+        shorts_url = f"https://www.youtube.com/shorts/{video_id}"
+        # We only need the headers, and we don't want to follow redirects automatically for this check
+        response = requests.head(shorts_url, allow_redirects=False, timeout=5) # 5 second timeout
+        
+        # If it's a Short, the /shorts/ URL should return a 200 OK (or similar success) and not redirect significantly.
+        # If it's not a Short, accessing the /shorts/ URL often results in a redirect (e.g., 302, 303, 307) to the /watch?v= URL.
+        if response.status_code >= 200 and response.status_code < 300:
+            # Check if it tries to redirect to a /watch?v= url, which would mean it's NOT a short despite a 200-ish code
+            # Some actual shorts might also have a location header but it points to itself or similar /shorts/ url.
+            # A more robust check might be needed if this isn't perfect.
+            # For now, if it's 200-299 on /shorts/ and doesn't heavily redirect, assume it's a Short.
+            # Location header might point to the same /shorts/ URL or a slightly canonicalized version.
+            # If it redirects to a /watch? url, then it's definitely not a short.
+            if 'location' in response.headers and '/watch?v=' in response.headers['location']:
+                # print(f"  DEBUG Format: {video_id} - /shorts/ URL redirected to /watch. Not a Short.")
+                pass # Fallback to secondary method
+            else:
+                # print(f"  DEBUG Format: {video_id} - /shorts/ URL returned {response.status_code}. Detected as Short.")
+                return "Short"
+        # If it redirects (3xx status codes like 301, 302, 303, 307, 308) it might be a non-short or youtube is just canonicalizing the URL
+        # A 303 specifically to the /watch?v= is a strong indicator it's NOT a short.
+        elif response.status_code in [301, 302, 303, 307, 308] and 'location' in response.headers and f"/watch?v={video_id}" in response.headers['location']:
+            # print(f"  DEBUG Format: {video_id} - /shorts/ URL redirected ({response.status_code}) to /watch. Not a Short.")
+            pass # Fallback to secondary method
+        # Other status codes or conditions might mean it's not a short or the check isn't conclusive, so we fallback.
+
+    except requests.exceptions.Timeout:
+        print(f"  ⚠️ Timeout checking /shorts/ URL for {video_id}. Falling back to secondary format detection.")
+    except requests.exceptions.RequestException as e:
+        print(f"  ⚠️ Error checking /shorts/ URL for {video_id}: {e}. Falling back to secondary format detection.")
+
+    # Secondary Method (Fallback): Aspect ratio and duration (original method)
+    # print(f"  DEBUG Format: {video_id} - Using fallback aspect/duration check.")
     is_vertical_or_square = False
-    # Ensure thumbnails and high quality thumbnail data exist before accessing
     if isinstance(thumbnails, dict):
         high_thumb = thumbnails.get("high", {})
         if isinstance(high_thumb, dict):
@@ -142,7 +250,7 @@ def create_notion_video_row(video, channel_name, channel_id):
     }
     try:
         duration_secs, duration_mins = parse_duration(video["contentDetails"]["duration"])
-        format_type = get_video_format_details(video["snippet"]["thumbnails"], duration_secs)
+        format_type = get_video_format_details(video['id'], video["snippet"]["thumbnails"], duration_secs)
 
         payload = {
             "parent": {"database_id": VIDEO_DB_ID},
@@ -205,10 +313,18 @@ def is_video_in_notion(video_id):
         print(f"❌ Exception querying Notion for video {video_id}: {str(e)}")
         return False
 
-def run_video_tracker():
+def run_video_tracker(bulk_mode=False, lookback_days_if_not_bulk=7):
+    """
+    Main function to track videos.
+    bulk_mode: If True, attempts to fetch all videos for all channels.
+    lookback_days_if_not_bulk: If bulk_mode is False, how many recent days to check.
+    """
     print(f"🚀 Starting video tracker at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    # print("⚙️ Focusing only on adding new videos to save API quota") # Commenting out, it's implied
-    
+    if bulk_mode:
+        print("⚙️ Running in BULK IMPORT mode - attempting to fetch all videos.")
+    else:
+        print(f"⚙️ Running in RECENT VIDEOS mode - fetching videos from last {lookback_days_if_not_bulk} days.")
+
     videos_added_total = 0
     missing_tokens_channels = []
     quota_issues_channels = []
@@ -222,20 +338,29 @@ def run_video_tracker():
             continue
 
         try:
-            recent_videos_response = fetch_recent_videos(creds, channel_id, days=1, max_results=5)
+            videos_from_channel_response = []
+            if bulk_mode:
+                # For bulk mode, fetch all videos, use larger page size, and a higher total limit
+                videos_from_channel_response = fetch_channel_videos(creds, channel_id, lookback_days=None, page_size=50, max_total_videos=2000) # Increased max_total_videos for bulk
+            else:
+                # For regular mode, fetch recent videos, smaller page size
+                videos_from_channel_response = fetch_channel_videos(creds, channel_id, lookback_days=lookback_days_if_not_bulk, page_size=10, max_total_videos=50) # max_total_videos acts as a safety for recent
             
-            if recent_videos_response is None: # Check for quota issue from fetch_recent_videos
+            if videos_from_channel_response is None: # Check for quota issue
                 quota_issues_channels.append(channel_name)
-                print(f"🟡 Skipping {channel_name} due to YouTube API quota issue during recent video fetch.")
+                print(f"🟡 Skipping {channel_name} due to YouTube API quota issue during video fetch.")
                 continue
-            if not recent_videos_response: # Empty list, no recent videos
-                print(f"ℹ️ No new videos found for {channel_name} in the last day.")
+            if not videos_from_channel_response: # Empty list, no videos found matching criteria
+                if bulk_mode:
+                    print(f"ℹ️ No videos found for {channel_name}.")
+                else:
+                    print(f"ℹ️ No new videos found for {channel_name} in the last {lookback_days_if_not_bulk} days.")
                 continue
                 
-            print(f"🔍 Found {len(recent_videos_response)} potentially new videos for {channel_name}.")
+            print(f"🔍 Found {len(videos_from_channel_response)} videos for {channel_name} based on current mode.")
             
             video_ids_to_fetch_details = []
-            for video_summary in recent_videos_response:
+            for video_summary in videos_from_channel_response:
                 if not is_video_in_notion(video_summary["videoId"]):
                     video_ids_to_fetch_details.append(video_summary["videoId"])
                 else:
@@ -288,4 +413,18 @@ def run_video_tracker():
     print(f"🏁 Video tracker finished at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 if __name__ == "__main__":
-    run_video_tracker()
+    # --- Configuration for the run ---
+    # Set to True to run in bulk import mode (fetch all videos for all channels)
+    # Set to False to run in recent videos mode (e.g., for daily checkups)
+    BULK_IMPORT_ENABLED = True
+    
+    # If BULK_IMPORT_ENABLED is False, how many days back to check for recent videos?
+    DAYS_TO_CHECK_FOR_RECENT = 1 # Set to 1 for very recent, 7 for a week, etc.
+    # --- End Configuration ---
+
+    if BULK_IMPORT_ENABLED:
+        print("🌟 BULK IMPORT MODE IS ENABLED. This might take a while and consume API quota. 🌟")
+        run_video_tracker(bulk_mode=True)
+    else:
+        print(f"ℹ️ Running in recent videos mode (checking last {DAYS_TO_CHECK_FOR_RECENT} day(s)). To run a full bulk import, edit BULK_IMPORT_ENABLED in the script.")
+        run_video_tracker(bulk_mode=False, lookback_days_if_not_bulk=DAYS_TO_CHECK_FOR_RECENT)
