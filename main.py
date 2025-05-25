@@ -7,6 +7,9 @@ from googleapiclient.discovery import build
 import pickle
 import json
 
+# --- Debug: Print Current Working Directory ---
+print(f"\n--- SCRIPT CWD: {os.getcwd()} ---\n")
+
 # --- CONFIGURATION ---
 YOUTUBE_API_KEY = os.environ["YOUTUBE_API_KEY"]
 NOTION_TOKEN = os.environ["NOTION_TOKEN"]
@@ -55,7 +58,10 @@ def get_analytics(channel_id, start_date, end_date):
     NOTE: This function is largely superseded by get_advanced_analytics for specific ranges.
     """
     try:
-        token_path = f"tokens/token_{channel_id}.pickle"
+        # --- MODIFIED TOKEN PATH --- BEGIN
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        token_path = os.path.join(script_dir, "tokens", f"token_{channel_id}.pickle")
+        # --- MODIFIED TOKEN PATH --- END
         with open(token_path, "rb") as token_file:
             creds = pickle.load(token_file)
     except FileNotFoundError:
@@ -185,7 +191,10 @@ def get_revenue_analytics(channel_id, start_date, end_date):
     Requires appropriate permissions for the linked Google account.
     """
     try:
-        token_path = f"tokens/token_{channel_id}.pickle"
+        # --- MODIFIED TOKEN PATH --- BEGIN
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        token_path = os.path.join(script_dir, "tokens", f"token_{channel_id}.pickle")
+        # --- MODIFIED TOKEN PATH --- END
         with open(token_path, "rb") as token_file:
             creds = pickle.load(token_file)
     except FileNotFoundError:
@@ -356,7 +365,10 @@ def get_advanced_analytics(channel_id):
     Fetches detailed analytics for 28-day, previous 28-day, and 365-day periods.
     """
     try:
-        token_path = f"tokens/token_{channel_id}.pickle"
+        # --- MODIFIED TOKEN PATH --- BEGIN
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        token_path = os.path.join(script_dir, "tokens", f"token_{channel_id}.pickle")
+        # --- MODIFIED TOKEN PATH --- END
         with open(token_path, "rb") as token_file:
             creds = pickle.load(token_file)
     except FileNotFoundError:
@@ -410,7 +422,10 @@ def get_yearly_analytics(channel_id):
     Fetches yearly views and subscribers for 2022, 2023, and 2024.
     """
     try:
-        token_path = f"tokens/token_{channel_id}.pickle"
+        # --- MODIFIED TOKEN PATH --- BEGIN
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        token_path = os.path.join(script_dir, "tokens", f"token_{channel_id}.pickle")
+        # --- MODIFIED TOKEN PATH --- END
         with open(token_path, "rb") as token_file:
             creds = pickle.load(token_file)
     except FileNotFoundError:
@@ -453,7 +468,10 @@ def get_yearly_revenue_analytics(channel_id):
     Fetches yearly estimated revenue and CPM for 2022, 2023, and 2024.
     """
     try:
-        token_path = f"tokens/token_{channel_id}.pickle"
+        # --- MODIFIED TOKEN PATH --- BEGIN
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        token_path = os.path.join(script_dir, "tokens", f"token_{channel_id}.pickle")
+        # --- MODIFIED TOKEN PATH --- END
         with open(token_path, "rb") as token_file:
             creds = pickle.load(token_file)
     except FileNotFoundError:
