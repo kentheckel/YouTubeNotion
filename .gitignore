@@ -1,1 +1,20 @@
 # Ignore YouTube API token files
+
+# Ignore Python virtual environment
+.venv/
+
+# Ignore token files
+tokens/
+
+# Ignore other common Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore local env files
+.env
