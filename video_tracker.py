@@ -50,6 +50,8 @@ def load_token(channel_id):
     with open(token_path, "rb") as token_file:
         return pickle.load(token_file)
 
+ALL_THE_SMOKE_CHANNEL_ID = "UC2ozVs4pg2K3uFLw6-0ayCQ" # Define constant for clarity
+
 def fetch_channel_videos(creds, channel_id, lookback_days=None, page_size=10, max_total_videos=1000):
     """
     Fetches videos for a channel.
@@ -60,6 +62,72 @@ def fetch_channel_videos(creds, channel_id, lookback_days=None, page_size=10, ma
     try:
         youtube = build("youtube", "v3", credentials=creds)
         
+        # --- Special handling for All The Smoke channel using playlistItems.list --- 
+        if channel_id == ALL_THE_SMOKE_CHANNEL_ID:
+            print(f"  Targeting 'All The Smoke' channel ({channel_id}). Using playlistItems.list for robust video fetching.")
+            uploads_playlist_id = channel_id.replace("UC", "UU", 1)
+            
+            all_videos = []
+            next_page_token = None
+            videos_fetched_count = 0
+
+            while True:
+                if videos_fetched_count >= max_total_videos:
+                    print(f"    Reached max_total_videos limit of {max_total_videos}. Stopping video fetch for this channel.")
+                    break
+                
+                actual_page_size = min(page_size, max_total_videos - videos_fetched_count)
+                if actual_page_size <= 0: break
+
+                playlist_request = youtube.playlistItems().list(
+                    part="snippet,contentDetails", # contentDetails needed for videoId and publishedAt
+                    playlistId=uploads_playlist_id,
+                    maxResults=actual_page_size,
+                    pageToken=next_page_token
+                )
+                playlist_response = playlist_request.execute()
+
+                for item in playlist_response.get("items", []):
+                    video_id = item.get("contentDetails", {}).get("videoId")
+                    published_at = item.get("contentDetails", {}).get("videoPublishedAt")
+                    title = item.get("snippet", {}).get("title")
+                    
+                    # Ensure essential details are present and video is public (sometimes unlisted/deleted can appear)
+                    if video_id and published_at and title and item.get("snippet", {}).get("thumbnails") :
+                        # Apply lookback_days filter if specified for playlistItems
+                        # Note: playlistItems.list doesn't have a direct publishedAfter filter.
+                        # We have to fetch and then filter if lookback_days is active.
+                        should_add = True
+                        if lookback_days is not None and lookback_days > 0:
+                            video_published_dt = datetime.fromisoformat(published_at.replace("Z", "+00:00"))
+                            cutoff_dt = datetime.now(timezone.utc) - timedelta(days=lookback_days)
+                            if video_published_dt < cutoff_dt:
+                                should_add = False
+                        
+                        if should_add:
+                            all_videos.append({
+                                "videoId": video_id,
+                                "title": title,
+                                "publishedAt": published_at
+                            })
+                            videos_fetched_count += 1
+                        # else: # Video is outside the lookback_days window
+                            # print(f"    Skipping video {video_id} ({title}) published at {published_at} - outside lookback window.")
+                    # else: # Missing crucial info, likely not a standard public video item
+                        # print(f"    Skipping item due to missing details: VideoID: {video_id}, Title: {title}, PublishedAt: {published_at}")
+
+                next_page_token = playlist_response.get("nextPageToken")
+                print(f"    Fetched page via playlistItems: {videos_fetched_count} videos so far for channel {channel_id}.")
+                
+                if not next_page_token:
+                    print(f"    No more pages to fetch via playlistItems for channel {channel_id}.")
+                    break
+            
+            print(f"  Total videos retrieved via playlistItems for channel {channel_id}: {len(all_videos)}")
+            return all_videos
+        # --- End special handling for All The Smoke --- 
+            
+        # --- Original search.list logic for other channels --- 
         published_after_filter = None
         if lookback_days is not None and lookback_days > 0:
             today = datetime.now(timezone.utc)
@@ -341,7 +409,7 @@ def run_video_tracker(bulk_mode=False, lookback_days_if_not_bulk=7):
             videos_from_channel_response = []
             if bulk_mode:
                 # For bulk mode, fetch all videos, use larger page size, and a higher total limit
-                videos_from_channel_response = fetch_channel_videos(creds, channel_id, lookback_days=None, page_size=50, max_total_videos=2000) # Increased max_total_videos for bulk
+                videos_from_channel_response = fetch_channel_videos(creds, channel_id, lookback_days=None, page_size=50, max_total_videos=2500) # Increased max_total_videos for bulk
             else:
                 # For regular mode, fetch recent videos, smaller page size
                 videos_from_channel_response = fetch_channel_videos(creds, channel_id, lookback_days=lookback_days_if_not_bulk, page_size=10, max_total_videos=50) # max_total_videos acts as a safety for recent
