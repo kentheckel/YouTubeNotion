@@ -59,6 +59,17 @@ jobs:
         run: python upload_to_notion.py
         continue-on-error: true   # ✅ allows next step to run even if this fails
 
+      # NEW STEP: Run analytics updater script
+      - name: Run analytics updater script
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          # Add any other environment variables analytics_updater.py might need
+          # For example, if it uses the YouTube API Key or a specific Notion Database ID
+          # YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          # NOTION_DATABASE_ID: ${{ secrets.ANALYTICS_DATABASE_ID }} # Assuming you might have a different DB ID for analytics
+        run: python analytics_updater.py # Corrected path
+        continue-on-error: true   # ✅ allows next step to run even if this fails
+
       - name: Commit updated data.json
         run: |
           git config user.name "github-actions"
