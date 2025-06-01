@@ -46,4 +46,4 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_VIDEO_DB_ID: ${{ secrets.NOTION_VIDEO_DB_ID }} 
-        run: python YouTubeNotion/analytics_updater.py 
+        run: python analytics_updater.py 
