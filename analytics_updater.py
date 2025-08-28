@@ -23,7 +23,7 @@ CHANNELS = {
     "All The Smoke Fight": "UCFPoJNd0d4k1H9A6UOlikcg",
     "Ring Champs": "UCBX_Qx_Hx5QTuEL72YVyn_A",
     "Victor Oladipo": "UCf5fcEALUCA53oUW3mc8tiQ",
-    # "San Antonio Spurs": "UCEZHE-0CoHqeL1LGFa2EmQw"
+    "San Antonio Spurs": "UCEZHE-0CoHqeL1LGFa2EmQw"
 }
 
 def load_token(channel_id):
