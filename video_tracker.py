@@ -25,8 +25,8 @@ CHANNELS = {
     "All The Smoke": "UC2ozVs4pg2K3uFLw6-0ayCQ",
     "KG Certified": "UCa9W_cPwwbDlwBwHOd1YWoQ",
     "Morning Kombat": "UC9Qy3sHrr5wil-rkYcmcNcw",
-    "All The Smoke Fight": "UCFPoJNd0d4k1H9A6UOLIKCG",
-    "Ring Champs": "UCBX_Qx_Hx5QTuEL72YVYN_A",
+    "All The Smoke Fight": "UCFPoJNd0d4k1H9A6UOlikcg",
+    "Ring Champs": "UCBX_Qx_Hx5QTuEL72YVyn_A",
     "Victor Oladipo": "UCf5fcEALUCA53oUW3mc8tiQ",
     "San Antonio Spurs": "UCEZHE-0CoHqeL1LGFa2EmQw"
 }
