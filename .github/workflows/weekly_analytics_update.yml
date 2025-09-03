@@ -38,7 +38,7 @@ jobs:
           echo "$TOKEN_UCFPOJND0D4K1H9A6UOLIKCG" | base64 --decode > tokens/token_UCFPoJNd0d4k1H9A6UOLIKCG.pickle
           echo "$TOKEN_UCBX_QX_HX5QTUEL72YVYN_A" | base64 --decode > tokens/token_UCBX_Qx_Hx5QTuEL72YVYN_A.pickle
           echo "$TOKEN_UCF5FCEEALUCA53OUW3MC8TIQ" | base64 --decode > tokens/token_UCf5fcEEALUCA53oUW3mc8tiQ.pickle
-          echo "$TOKEN_UCEZHE_0COHQEL1LGFa2EMQW" | base64 --decode > tokens/token_UCEZHE_0CoHqeL1LGFa2EmQw.pickle
+          echo "$TOKEN_UCEZHE_0COHQEL1LGFa2EMQW" | base64 --decode > tokens/token_UCEZHE-0CoHqeL1LGFa2EmQw.pickle
           # Ensure all your channel token secrets are listed above for the env block
           # and processed here.
 
