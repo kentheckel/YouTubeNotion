@@ -22,14 +22,18 @@ CHANNELS = {
     "Morning Kombat": "UC9Qy3sHrr5wil-rkYcmcNcw",
     "All The Smoke Fight": "UCFPoJNd0d4k1H9A6UOlikcg",
     "Ring Champs": "UCBX_Qx_Hx5QTuEL72YVyn_A",
-    "Victor Oladipo": "UCf5fcEALUCA53oUW3mc8tiQ",
     "San Antonio Spurs": "UCEZHE-0CoHqeL1LGFa2EmQw"
 }
 
 def load_token(channel_id):
     """Loads a token for a given channel_id."""
+    # Normalize the channel_id to ensure it's clean (remove any extra whitespace)
+    if channel_id:
+        channel_id = channel_id.strip().replace('\n', '').replace('\r', '').replace('\t', '')
+    
     # --- BEGIN DEBUG PRINTS ---
     print(f"  DEBUG load_token: Received channel_id: '{channel_id}'")
+    print(f"  DEBUG load_token: Channel ID length: {len(channel_id) if channel_id else 0}")
     token_filename = f"token_{channel_id}.pickle"
     print(f"  DEBUG load_token: Constructed token_filename: '{token_filename}'")
     # Get absolute path for TOKEN_DIR for clarity in debugging
@@ -41,13 +45,21 @@ def load_token(channel_id):
     # --- END DEBUG PRINTS ---
 
     if not os.path.exists(token_path):
-        print(f"⚠️ No token found for channel_id {channel_id} at {token_path}")
+        print(f"⚠️ No token found for channel_id '{channel_id}' at {token_path}")
+        # List available tokens to help debug
+        if os.path.exists(TOKEN_DIR):
+            available_tokens = [f for f in os.listdir(TOKEN_DIR) if f.startswith('token_') and f.endswith('.pickle')]
+            print(f"  Available tokens in {TOKEN_DIR}: {available_tokens}")
         return None
     try:
         with open(token_path, "rb") as token_file:
-            return pickle.load(token_file)
+            creds = pickle.load(token_file)
+            print(f"  ✅ Token loaded successfully for channel_id '{channel_id}'")
+            return creds
     except Exception as e:
-        print(f"❌ Error loading token for {channel_id}: {e}")
+        print(f"❌ Error loading token for channel_id '{channel_id}': {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def get_videos_from_notion():
@@ -85,9 +97,11 @@ def get_videos_from_notion():
                 date_published_prop = page.get("properties", {}).get("Date Published", {}).get("date", {})
 
                 video_id = video_id_prop[0]["plain_text"] if video_id_prop else None
-                # Strip whitespace from channel_id read from Notion
+                # Strip whitespace from channel_id read from Notion and normalize it
+                # Handle potential whitespace, newlines, or other formatting issues
                 channel_id_text = channel_id_prop[0]["plain_text"] if channel_id_prop and channel_id_prop[0].get("plain_text") else None
-                channel_id = channel_id_text.strip() if channel_id_text else None
+                # Strip all whitespace (spaces, tabs, newlines) and ensure it's a clean channel ID
+                channel_id = channel_id_text.strip().replace('\n', '').replace('\r', '').replace('\t', '') if channel_id_text else None
                 
                 title = title_prop[0]["plain_text"] if title_prop else "Unknown Title"
                 # Get the start date from the date object, it's in ISO format
@@ -316,11 +330,18 @@ def run_analytics_updater():
             skipped_no_channel_id += 1
             continue
 
-        creds = load_token(video_data["channel_id"])
+        # Normalize channel_id before using it (in case it wasn't normalized when read from Notion)
+        channel_id_normalized = video_data["channel_id"].strip().replace('\n', '').replace('\r', '').replace('\t', '')
+        print(f"  Channel ID from Notion: '{video_data['channel_id']}' (normalized: '{channel_id_normalized}')")
+        
+        creds = load_token(channel_id_normalized)
         if not creds:
             # This message is already printed by load_token
             skipped_no_token +=1
             continue
+        
+        # Use the normalized channel_id for the API call as well
+        video_data["channel_id"] = channel_id_normalized
         
         if not video_data["published_at_iso"]:
             print(f"  🟡 Skipping - Missing Published Date in Notion for video {video_data['video_id']}. Cannot determine analytics start date.")
