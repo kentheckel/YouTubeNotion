@@ -5,66 +5,134 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>YouTube Analytics Dashboard</title>
     <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: Arial, sans-serif;
-            background: white;
-            margin: 0;
-            padding: 10px;
-            display: flex;
-            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f6f8;
+            color: #1a1a2e;
+            min-height: 100vh;
+            padding: 40px 20px;
         }
-
-        .dashboard {
-            display: flex;
-            gap: 0;
-            flex-wrap: nowrap;
-            justify-content: center;
-            width: fit-content;
-            min-width: 1400px;
-        }
-
-        .widget {
-            width: 180px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: none;
-            padding: 10px 5px;
+        .container { max-width: 1200px; margin: 0 auto; }
+        .page-header {
             text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #e0e0e0;
         }
-
-        .widget img {
+        .page-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+        .page-header p { font-size: 14px; color: #6b7280; }
+        .channels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .channel-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            text-decoration: none;
+            color: inherit;
+            transition: box-shadow 0.2s, transform 0.2s;
+            display: block;
+        }
+        .channel-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .card-header img {
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            margin-bottom: 8px;
             object-fit: cover;
         }
-
-        .widget h2 {
-            font-size: 16px;
-            margin: 8px 0;
+        .card-header h2 { font-size: 18px; font-weight: 700; }
+        .card-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
         }
-
-        .metric {
-            font-size: 14px;
-            margin: 4px 0;
+        .card-metric { text-align: center; }
+        .card-metric-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .card-metric-value {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .card-metric-change {
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+        .card-metric-change.up { color: #059669; }
+        .card-metric-change.down { color: #dc2626; }
+        .card-revenue {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .revenue-item { text-align: center; }
+        .revenue-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .revenue-value {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .no-revenue { display: none; }
+        .footer {
+            text-align: center;
+            padding-top: 24px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        @media (max-width: 600px) {
+            .channels-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="dashboard" id="dashboard"></div>
+    <div class="container">
+        <div class="page-header">
+            <h1>Channel Analytics</h1>
+            <p>28-Day Performance Overview</p>
+        </div>
+        <div class="channels-grid" id="dashboard"></div>
+        <div class="footer" id="footer"></div>
+    </div>
 
     <script>
-        const notionLinks = {
-            "All The Smoke": "https://www.notion.so/kentheckel/All-The-Smoke-1c3051ef8029805da951f3385914ad6b",
-            "All The Smoke Fight": "https://www.notion.so/kentheckel/All-The-Smoke-Fight-1c3051ef802980a19662eba6a96cdc8e",
-            "KG Certified": "https://www.notion.so/kentheckel/KG-Certified-1cb051ef80298064aaaffa6eb35356ac",
-            "Morning Kombat": "https://www.notion.so/kentheckel/Morning-Kombat-1c3051ef8029802aa60df13b240e1bef",
-            "Ring Champs": "https://www.notion.so/kentheckel/Ring-Champs-1c3051ef8029809a8075dafd282ee4bd",
-            "Victor Oladipo": "https://www.notion.so/kentheckel/Inner-Court-1d7051ef802980db8ba5cc19454257e9",
-            "San Antonio Spurs": "https://www.notion.so/kentheckel/San-Antonio-Spurs-1c3051ef802980429831e74fa33567f0"
-        };
-
         const iconMap = {
             "All The Smoke": "ATS_Icon.jpg",
             "All The Smoke Fight": "ATSF_Icon.jpg",
@@ -72,7 +140,8 @@
             "Morning Kombat": "MK_Icon.jpg",
             "Ring Champs": "RC_Icon.jpg",
             "Victor Oladipo": "TIC_Icon.jpg",
-            "San Antonio Spurs": "SAS_Icon.jpg"
+            "San Antonio Spurs": "SAS_Icon.jpg",
+            "Killswitch": ""
         };
 
         const displayNames = {
@@ -81,8 +150,20 @@
             "KG Certified": "KG Certified",
             "Morning Kombat": "Morning Kombat",
             "Ring Champs": "Ring Champs",
-            "Victor Oladipo": "Inner Court",
-            "San Antonio Spurs": "Spurs"
+            "Victor Oladipo": "The Inner Court",
+            "San Antonio Spurs": "San Antonio Spurs",
+            "Killswitch": "Killswitch"
+        };
+
+        const pageLinks = {
+            "All The Smoke": "all-the-smoke.html",
+            "All The Smoke Fight": "all-the-smoke-fight.html",
+            "KG Certified": "kg-certified.html",
+            "Morning Kombat": "morning-kombat.html",
+            "Ring Champs": "ring-champs.html",
+            "Victor Oladipo": "victor-oladipo.html",
+            "San Antonio Spurs": "san-antonio-spurs.html",
+            "Killswitch": "killswitch.html"
         };
 
         const channelOrder = [
@@ -92,38 +173,89 @@
             "Ring Champs",
             "KG Certified",
             "Victor Oladipo",
-            "San Antonio Spurs"
+            "San Antonio Spurs",
+            "Killswitch"
         ];
+
+        function formatNumber(n) {
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+            if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+            return n.toLocaleString();
+        }
+
+        function formatCurrency(n) {
+            return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        }
+
+        function pctChange(c, p) {
+            if (p === 0) return c > 0 ? 100 : 0;
+            return ((c - p) / p * 100);
+        }
+
+        function changeSpan(current, previous) {
+            const pct = pctChange(current, previous);
+            const isUp = pct >= 0;
+            const arrow = isUp ? '&#9650;' : '&#9660;';
+            return `<div class="card-metric-change ${isUp ? 'up' : 'down'}">${arrow} ${Math.abs(pct).toFixed(1)}%</div>`;
+        }
 
         fetch('public/data.json')
             .then(res => res.json())
             .then(data => {
                 const dashboard = document.getElementById('dashboard');
-                
                 const channelMap = {};
-                data.forEach(channel => {
-                    channelMap[channel.name] = channel;
-                });
-                
-                channelOrder.forEach(channelName => {
-                    const channel = channelMap[channelName];
-                    if (!channel) return;
+                data.forEach(ch => channelMap[ch.name] = ch);
 
-                    const widget = document.createElement('div');
-                    
-                    widget.innerHTML = `
-                        <div class="widget">
-                            <img src="${iconMap[channel.name]}" alt="${channel.name}" />
-                            <h2>${displayNames[channel.name]}</h2>
-                            <div class="metric">👁 ${channel.views_28.toLocaleString()} ${channel.views_28 > channel.views_prev_28 ? "📈" : "📉"}</div>
-                            <div class="metric">👤 ${channel.subs_28.toLocaleString()} ${channel.subs_28 > channel.subs_prev_28 ? "📈" : "📉"}</div>
-                            <div class="metric">🎥 ${channel.uploads_28} ${channel.uploads_28 > channel.uploads_prev_28 ? "📈" : "📉"}</div>
+                channelOrder.forEach(name => {
+                    const ch = channelMap[name];
+                    if (!ch) return;
+
+                    const hasRevenue = ch.revenue_28 > 0 || ch.revenue_365 > 0;
+
+                    const card = document.createElement('a');
+                    card.className = 'channel-card';
+                    card.href = pageLinks[name] || '#';
+
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <img src="${iconMap[name] || ch.icon || ''}" alt="${displayNames[name] || name}" />
+                            <h2>${displayNames[name] || name}</h2>
+                        </div>
+                        <div class="card-metrics">
+                            <div class="card-metric">
+                                <div class="card-metric-label">Views</div>
+                                <div class="card-metric-value">${formatNumber(ch.views_28)}</div>
+                                ${changeSpan(ch.views_28, ch.views_prev_28)}
+                            </div>
+                            <div class="card-metric">
+                                <div class="card-metric-label">Subscribers</div>
+                                <div class="card-metric-value">${formatNumber(ch.subs_28)}</div>
+                                ${changeSpan(ch.subs_28, ch.subs_prev_28)}
+                            </div>
+                            <div class="card-metric">
+                                <div class="card-metric-label">Uploads</div>
+                                <div class="card-metric-value">${ch.uploads_28}</div>
+                                ${changeSpan(ch.uploads_28, ch.uploads_prev_28)}
+                            </div>
+                        </div>
+                        <div class="card-revenue ${hasRevenue ? '' : 'no-revenue'}">
+                            <div class="revenue-item">
+                                <div class="revenue-label">28-Day Revenue</div>
+                                <div class="revenue-value">${formatCurrency(ch.revenue_28)}</div>
+                            </div>
+                            <div class="revenue-item">
+                                <div class="revenue-label">365-Day Revenue</div>
+                                <div class="revenue-value">${formatCurrency(ch.revenue_365)}</div>
+                            </div>
                         </div>
                     `;
-                    
-                    dashboard.appendChild(widget);
+
+                    dashboard.appendChild(card);
                 });
+
+                const now = new Date();
+                document.getElementById('footer').textContent = 'Data updated ' + now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
             });
     </script>
 </body>
-</html> 
+</html>

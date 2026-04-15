@@ -29,6 +29,7 @@ jobs:
           TOKEN_UCBX_QX_HX5QTUEL72YVYN_A: ${{ secrets.TOKEN_UCBX_QX_HX5QTUEL72YVYN_A }}
           TOKEN_UCF5FCEEALUCA53OUW3MC8TIQ: ${{ secrets.TOKEN_UCF5FCEEALUCA53OUW3MC8TIQ }}
           TOKEN_UCEZHE_0COHQEL1LGFa2EMQW: ${{ secrets.TOKEN_UCEZHE_0COHQEL1LGFa2EMQW }}
+          TOKEN_UCBWGKD8_FBXUN7ZGZFC5KJG: ${{ secrets.TOKEN_UCBWGKD8_FBXUN7ZGZFC5KJG }}
         run: |
           mkdir -p tokens # Create the tokens directory
           # Decode and save each Base64 token from GitHub Secrets
@@ -39,6 +40,7 @@ jobs:
           echo "$TOKEN_UCBX_QX_HX5QTUEL72YVYN_A" | base64 --decode > tokens/token_UCBX_Qx_Hx5QTuEL72YVYN_A.pickle
           echo "$TOKEN_UCF5FCEEALUCA53OUW3MC8TIQ" | base64 --decode > tokens/token_UCf5fcEEALUCA53oUW3mc8tiQ.pickle
           echo "$TOKEN_UCEZHE_0COHQEL1LGFa2EMQW" | base64 --decode > tokens/token_UCEZHE-0CoHqeL1LGFa2EmQw.pickle
+          echo "$TOKEN_UCBWGKD8_FBXUN7ZGZFC5KJG" | base64 --decode > tokens/token_UCbwGkD8-Fbxun7zgzfC5kjg.pickle
           # Ensure all your channel token secrets are listed above for the env block
           # and processed here.
 
