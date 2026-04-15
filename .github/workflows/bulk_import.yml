@@ -29,6 +29,7 @@ jobs:
           echo "${{ secrets.TOKEN_UCF5FCEEALUCA53OUW3MC8TIQ }}" | base64 --decode > tokens/token_UCf5fcEEALUCA53oUW3mc8tiQ.pickle
           echo "${{ secrets.TOKEN_UCEZHE_0COHQEL1LGFa2EMQW }}" | base64 --decode > tokens/token_UCEZHE-0CoHqeL1LGFa2EmQw.pickle
           echo "${{ secrets.TOKEN_UCBWGKD8_FBXUN7ZGZFC5KJG }}" | base64 --decode > tokens/token_UCbwGkD8-Fbxun7zgzfC5kjg.pickle
+          echo "${{ secrets.TOKEN_UCCZ6IVDTPU5G4PN3MAIBRUW }}" | base64 --decode > tokens/token_UCcZ6iVdTPU5g4pN3MaIbruw.pickle
 
       - name: Bulk import all videos to Notion
         env:

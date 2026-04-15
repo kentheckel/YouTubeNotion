@@ -23,7 +23,11 @@ CHANNELS = {
     "All The Smoke Fight": "UCFPoJNd0d4k1H9A6UOlikcg",
     "Ring Champs": "UCBX_Qx_Hx5QTuEL72YVyn_A",
     "San Antonio Spurs": "UCEZHE-0CoHqeL1LGFa2EmQw",
-    "Killswitch": "UCbwGkD8-Fbxun7zgzfC5kjg"
+    "Killswitch": "UCbwGkD8-Fbxun7zgzfC5kjg",
+    "The Late Run": "UCcZ6iVdTPU5g4pN3MaIbruw",
+    "Michael Easter": "UC-3foA4PyACqvubjyrlzIcg",
+    "Anik & Florian": "UCDqSRXkx0E58VdH__Y8expQ",
+    "No Such Thing": "UCFRiYABu5iXlkEF5ZCZd6wQ"
 }
 
 def load_token(channel_id):
