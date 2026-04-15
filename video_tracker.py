@@ -414,18 +414,13 @@ def run_video_tracker(bulk_mode=False, lookback_days_if_not_bulk=7):
     print(f"🏁 Video tracker finished at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 if __name__ == "__main__":
-    # --- Configuration for the run ---
-    # Set to True to run in bulk import mode (fetch all videos for all channels)
-    # Set to False to run in recent videos mode (e.g., for daily checkups)
-    BULK_IMPORT_ENABLED = True
-    
-    # If BULK_IMPORT_ENABLED is False, how many days back to check for recent videos?
-    DAYS_TO_CHECK_FOR_RECENT = 1 # Set to 1 for very recent, 7 for a week, etc.
-    # --- End Configuration ---
+    import sys
+    bulk_mode = "--bulk" in sys.argv
+    DAYS_TO_CHECK_FOR_RECENT = 3  # Covers weekend gaps and timezone edge cases
 
-    if BULK_IMPORT_ENABLED:
-        print("🌟 BULK IMPORT MODE IS ENABLED. This might take a while and consume API quota. 🌟")
+    if bulk_mode:
+        print("🌟 BULK IMPORT MODE (--bulk flag). Fetching all videos for all channels. 🌟")
         run_video_tracker(bulk_mode=True)
     else:
-        print(f"ℹ️ Running in recent videos mode (checking last {DAYS_TO_CHECK_FOR_RECENT} day(s)). To run a full bulk import, edit BULK_IMPORT_ENABLED in the script.")
+        print(f"ℹ️ Daily mode: checking last {DAYS_TO_CHECK_FOR_RECENT} days. Use --bulk for full historical import.")
         run_video_tracker(bulk_mode=False, lookback_days_if_not_bulk=DAYS_TO_CHECK_FOR_RECENT)

@@ -1,12 +1,10 @@
-name: Update YouTube Stats
+name: Bulk Video Import
 
 on:
-  schedule:
-    - cron: "0 12 * * *"  # Runs daily at 12:00 UTC
-  workflow_dispatch:      # Allows manual runs
+  workflow_dispatch:  # Manual trigger only — use when adding a new channel
 
 jobs:
-  update:
+  bulk-import:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -32,30 +30,14 @@ jobs:
           echo "${{ secrets.TOKEN_UCEZHE_0COHQEL1LGFa2EMQW }}" | base64 --decode > tokens/token_UCEZHE-0CoHqeL1LGFa2EmQw.pickle
           echo "${{ secrets.TOKEN_UCBWGKD8_FBXUN7ZGZFC5KJG }}" | base64 --decode > tokens/token_UCbwGkD8-Fbxun7zgzfC5kjg.pickle
 
-      - name: Channel analytics + Notion sync
-        env:
-          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-        run: python main.py
-
-      - name: Discover new videos (last 3 days)
+      - name: Bulk import all videos to Notion
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_VIDEO_DB_ID: ${{ secrets.NOTION_VIDEO_DB_ID }}
-        run: python video_tracker.py
+        run: python video_tracker.py --bulk
 
-      - name: Update per-video analytics (last 90 days)
+      - name: Update analytics for all videos
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_VIDEO_DB_ID: ${{ secrets.NOTION_VIDEO_DB_ID }}
-        run: python analytics_updater.py
-        continue-on-error: true  # Non-critical — don't block data.json commit
-
-      - name: Commit updated data.json
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add public/data.json
-          git commit -m "Update data.json" || echo "No changes to commit"
-          git push
+        run: python analytics_updater.py --all
