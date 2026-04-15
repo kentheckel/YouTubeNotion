@@ -33,6 +33,7 @@ jobs:
           echo "${{ secrets.TOKEN_UCBX_QX_HX5QTUEL72YVYN_A }}" | base64 --decode > tokens/token_UCBX_Qx_Hx5QTuEL72YVYN_A.pickle
           echo "${{ secrets.TOKEN_UCF5FCEEALUCA53OUW3MC8TIQ }}" | base64 --decode > tokens/token_UCf5fcEEALUCA53oUW3mc8tiQ.pickle
           echo "${{ secrets.TOKEN_UCEZHE_0COHQEL1LGFa2EMQW }}" | base64 --decode > tokens/token_UCEZHE-0CoHqeL1LGFa2EmQw.pickle
+          echo "${{ secrets.TOKEN_UCBWGKD8_FBXUN7ZGZFC5KJG }}" | base64 --decode > tokens/token_UCbwGkD8-Fbxun7zgzfC5kjg.pickle
           # IMPORTANT: Add a line for *every* channel token you have as a secret.
           # Double-check that the secret names (e.g., TOKEN_UC2OZVS4PG2K3UFLW6_0AYCQ)
           # exactly match the names you used when creating them in GitHub Secrets.

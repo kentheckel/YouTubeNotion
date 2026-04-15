@@ -1,72 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generate Channel Pages</title>
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #f5f6f8;
-            color: #1a1a2e;
-            min-height: 100vh;
-            padding: 40px 20px;
-        }
-        .container { max-width: 600px; margin: 0 auto; }
-        h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; text-align: center; }
-        p.info { font-size: 14px; color: #6b7280; text-align: center; margin-bottom: 24px; }
-        ul { list-style: none; }
-        li {
-            background: #fff;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-        }
-        li a { color: #1a1a2e; text-decoration: none; font-weight: 500; }
-        .status { font-size: 13px; color: #059669; margin-top: 12px; text-align: center; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Generate Channel Pages</h1>
-        <p class="info">This page generates updated HTML files for each channel.</p>
-        <div id="output"></div>
-    </div>
-
-    <script>
-        const iconMap = {
-            'All The Smoke': 'ATS_Icon.jpg',
-            'All The Smoke Fight': 'ATSF_Icon.jpg',
-            'KG Certified': 'KG_Icon.jpg',
-            'Morning Kombat': 'MK_Icon.jpg',
-            'Ring Champs': 'RC_Icon.jpg',
-            'San Antonio Spurs': 'SAS_Icon.jpg',
-            'Victor Oladipo': 'TIC_Icon.jpg',
-            'Killswitch': ''
-        };
-
-        const displayNames = {
-            'All The Smoke': 'All The Smoke',
-            'All The Smoke Fight': 'All The Smoke Fight',
-            'KG Certified': 'KG Certified',
-            'Morning Kombat': 'Morning Kombat',
-            'Ring Champs': 'Ring Champs',
-            'San Antonio Spurs': 'San Antonio Spurs',
-            'Victor Oladipo': 'The Inner Court',
-            'Killswitch': 'Killswitch'
-        };
-
-        function templateHTML(channel, iconFilename) {
-            const name = channel.name;
-            const display = displayNames[name] || name;
-            return `<!DOCTYPE html>
-<html lang="en">
-<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${display} - Channel Analytics</title>
+    <title>Killswitch - Channel Analytics</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -106,9 +43,9 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="${iconFilename}" alt="${display}" />
+            <img id="channel-icon" src="" alt="Killswitch" />
             <div class="header-text">
-                <h1>${display}</h1>
+                <h1>Killswitch</h1>
                 <p>28-Day Performance Report</p>
             </div>
         </div>
@@ -129,15 +66,16 @@
         function changeHTML(current, previous) {
             const pct = pctChange(current, previous);
             const isUp = pct >= 0;
-            return \\\`<div class="metric-change \\\${isUp ? 'up' : 'down'}"><span class="arrow">\\\${isUp ? '&#9650;' : '&#9660;'}</span> \\\${Math.abs(pct).toFixed(1)}%</div>
-                    <div class="metric-prev">prev: \\\${formatNumber(previous)}</div>\\\`;
+            return `<div class="metric-change ${isUp ? 'up' : 'down'}"><span class="arrow">${isUp ? '&#9650;' : '&#9660;'}</span> ${Math.abs(pct).toFixed(1)}%</div>
+                    <div class="metric-prev">prev: ${formatNumber(previous)}</div>`;
         }
         function metricCard(label, value, current, previous) {
-            return \\\`<div class="metric-card"><div class="metric-label">\\\${label}</div><div class="metric-value">\\\${value}</div>\\\${changeHTML(current, previous)}</div>\\\`;
+            return `<div class="metric-card"><div class="metric-label">${label}</div><div class="metric-value">${value}</div>${changeHTML(current, previous)}</div>`;
         }
         fetch('public/data.json').then(r => r.json()).then(data => {
-            const channel = data.find(c => c.name === "${name}");
+            const channel = data.find(c => c.name === "Killswitch");
             if (!channel) return;
+            if (channel.icon) document.getElementById('channel-icon').src = channel.icon;
             document.getElementById('metrics').innerHTML =
                 metricCard('Views', formatNumber(channel.views_28), channel.views_28, channel.views_prev_28) +
                 metricCard('Subscribers', formatNumber(channel.subs_28), channel.subs_28, channel.subs_prev_28) +
@@ -154,54 +92,16 @@
                 ].filter(y => y.rev > 0);
                 if (years.length > 0) {
                     document.getElementById('yearly-metrics').innerHTML = years.map(y =>
-                        \\\`<div class="yearly-card"><div class="yearly-label">\\\${y.year}</div><div class="yearly-value">\\\${formatCurrency(y.rev)}</div><div class="yearly-sub">CPM: $\\\${y.cpm.toFixed(2)}</div></div>\\\`
+                        `<div class="yearly-card"><div class="yearly-label">${y.year}</div><div class="yearly-value">${formatCurrency(y.rev)}</div><div class="yearly-sub">CPM: $${y.cpm.toFixed(2)}</div></div>`
                     ).join('');
                 }
                 if (channel.revenue_365 > 0) {
                     document.getElementById('revenue-metrics').innerHTML +=
-                        metricCard('365-Day Revenue', formatCurrency(channel.revenue_365), 0, 0).replace(/<div class="metric-change.*?<\\\\/div>\\\\s*<div class="metric-prev.*?<\\\\/div>/, \\\`<div class="metric-prev">CPM: $\\\${channel.cpm_365.toFixed(2)}</div>\\\`);
+                        metricCard('365-Day Revenue', formatCurrency(channel.revenue_365), 0, 0).replace(/<div class="metric-change.*?<\/div>\s*<div class="metric-prev.*?<\/div>/, `<div class="metric-prev">CPM: $${channel.cpm_365.toFixed(2)}</div>`);
                 }
             } else { document.getElementById('revenue-section').classList.add('no-revenue'); }
             document.getElementById('footer').textContent = 'Data updated ' + new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
         });
-    <\/script>
-</body>
-</html>`;
-        }
-
-        fetch('data.json')
-            .then(res => res.json())
-            .then(data => {
-                const list = document.createElement('ul');
-                document.getElementById('output').appendChild(list);
-
-                data.forEach(channel => {
-                    const iconFilename = iconMap[channel.name];
-                    if (!iconFilename) return;
-
-                    const htmlContent = templateHTML(channel, iconFilename);
-                    const filename = channel.name.toLowerCase().replace(/ /g, '-') + '.html';
-
-                    const li = document.createElement('li');
-                    const link = document.createElement('a');
-                    link.href = filename;
-                    link.textContent = (displayNames[channel.name] || channel.name) + ' (' + filename + ')';
-                    li.appendChild(link);
-                    list.appendChild(li);
-
-                    const blob = new Blob([htmlContent], { type: 'text/html' });
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = filename;
-                    a.click();
-                    URL.revokeObjectURL(a.href);
-                });
-
-                const status = document.createElement('div');
-                status.className = 'status';
-                status.textContent = data.length + ' channel pages generated and downloaded.';
-                document.getElementById('output').appendChild(status);
-            });
     </script>
 </body>
 </html>
