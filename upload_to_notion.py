@@ -19,7 +19,7 @@ def create_notion_page(video):
         "Video URL": {"url": video["Video URL"]},
         "Date Published": {"date": {"start": video["Date Published"]}},
         "Views": {"number": int(video["Views"]) if video["Views"] else 0},
-        "Subs Gained": {"number": int(video["Subs Gained"]) if video["Subs Gained"] else 0},
+        "Subs Gained": {"number": int(float(video["Subs Gained"])) if video["Subs Gained"] else 0},
         "Revenue": {"number": float(video["Revenue"]) if video["Revenue"] else 0},
         "Avg View %": {"number": float(video["Avg View %"]) if video["Avg View %"] else 0},
         "Avg View Min": {"number": float(video["Avg View Min"]) if video["Avg View Min"] else 0},
