@@ -311,13 +311,27 @@ def fetch_video_analytics_from_youtube(creds, channel_id_for_api_context, video_
         return None # Indicate an error or significant issue
 
 
-def run_analytics_updater():
+def run_analytics_updater(update_all=False):
     print(f"🚀 Starting YouTube Analytics Updater at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S %Z')}")
-    
+
     videos_in_notion = get_videos_from_notion()
     if not videos_in_notion:
         print("🏁 No videos found in Notion or error fetching. Exiting.")
         return
+
+    # Filter to recent videos for daily runs (older videos' metrics barely change)
+    if not update_all:
+        DAILY_LOOKBACK_DAYS = 90
+        cutoff = datetime.now(timezone.utc) - timedelta(days=DAILY_LOOKBACK_DAYS)
+        total_before = len(videos_in_notion)
+        videos_in_notion = [
+            v for v in videos_in_notion
+            if v["published_at_iso"] and
+               datetime.fromisoformat(v["published_at_iso"].replace("Z", "+00:00")) > cutoff
+        ]
+        print(f"📋 Daily mode: updating {len(videos_in_notion)} videos from last {DAILY_LOOKBACK_DAYS} days (skipped {total_before - len(videos_in_notion)} older videos)")
+    else:
+        print(f"📋 Full mode (--all): updating all {len(videos_in_notion)} videos")
 
     updated_count = 0
     skipped_no_channel_id = 0
@@ -391,4 +405,6 @@ def run_analytics_updater():
 
 
 if __name__ == "__main__":
-    run_analytics_updater() 
+    import sys
+    update_all = "--all" in sys.argv
+    run_analytics_updater(update_all=update_all)

@@ -99,25 +99,34 @@ def get_analytics(channel_id, start_date, end_date):
 def get_uploads_in_range(channel_id, start_date, end_date, creds):
     """
     Counts the number of videos uploaded by a channel within a specified date range.
-    Uses the YouTube Data API v3.
+    Uses playlistItems.list (1 unit/call) instead of search.list (100 units/call).
     """
     youtube = build("youtube", "v3", credentials=creds)
+    uploads_playlist_id = channel_id.replace("UC", "UU", 1)
     upload_count = 0
     next_page_token = None
 
+    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+    end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+
     while True:
-        response = youtube.search().list(
-            part="snippet",
-            channelId=channel_id,
+        response = youtube.playlistItems().list(
+            part="contentDetails",
+            playlistId=uploads_playlist_id,
             maxResults=50,
-            order="date",
-            publishedAfter=start_date + "T00:00:00Z",
-            publishedBefore=end_date + "T23:59:59Z",
-            type="video",
             pageToken=next_page_token
         ).execute()
 
-        upload_count += len(response.get("items", []))
+        for item in response.get("items", []):
+            published = item.get("contentDetails", {}).get("videoPublishedAt", "")
+            if published:
+                video_dt = datetime.fromisoformat(published.replace("Z", "+00:00")).replace(tzinfo=None)
+                if start_dt <= video_dt <= end_dt:
+                    upload_count += 1
+                elif video_dt < start_dt:
+                    # Playlist is reverse-chronological, so we can stop early
+                    return upload_count
+
         next_page_token = response.get("nextPageToken")
         if not next_page_token:
             break
@@ -513,7 +522,8 @@ def get_yearly_revenue_analytics(channel_id):
 if __name__ == "__main__":
     # Get today's date in 'YYYY-MM-%d' format, adjusted for US/Eastern timezone
     today = datetime.now(pytz.timezone("US/Eastern")).strftime("%Y-%m-%d")
-    
+    export_data = []
+
     for channel_name, channel_id in CHANNELS.items():
         # Fetch general channel statistics
         stats = get_channel_stats(channel_id)
@@ -523,14 +533,12 @@ if __name__ == "__main__":
         yearly_analytics = get_yearly_analytics(channel_id)
 
         # --- Revenue data fetching ---
-        # Define date ranges for revenue analytics
         today_date_str = datetime.utcnow().date().isoformat()
         start_28_days_ago = (datetime.utcnow().date() - timedelta(days=28)).isoformat()
         start_prev_28_days_ago = (datetime.utcnow().date() - timedelta(days=56)).isoformat()
         end_prev_28_days_ago = (datetime.utcnow().date() - timedelta(days=29)).isoformat()
         start_365_days_ago = (datetime.utcnow().date() - timedelta(days=365)).isoformat()
 
-        # Fetch revenue for specified periods
         revenue_28_days = get_revenue_analytics(channel_id, start_28_days_ago, today_date_str)
         revenue_prev_28_days = get_revenue_analytics(channel_id, start_prev_28_days_ago, end_prev_28_days_ago)
         revenue_365_days = get_revenue_analytics(channel_id, start_365_days_ago, today_date_str)
@@ -542,9 +550,32 @@ if __name__ == "__main__":
         # Upsert (update or insert) the data into Notion
         upsert_notion_row(channel_name, stats, analytics, yearly_analytics,
                           revenue_28_days, revenue_prev_28_days, revenue_365_days, yearly_revenue_analytics,
-                          channel_icon_url, today) # Pass channel_icon_url here
+                          channel_icon_url, today)
 
-        # Debug output per channel to show fetched data
+        # Build export data from the same fetch (no double-fetch)
+        export_data.append({
+            "name": channel_name,
+            "icon": channel_icon_url,
+            "views_28": analytics["views_28"],
+            "views_prev_28": analytics["views_prev_28"],
+            "subs_28": analytics["subs_28"],
+            "subs_prev_28": analytics["subs_prev_28"],
+            "uploads_28": analytics["uploads_28"],
+            "uploads_prev_28": analytics["uploads_prev_28"],
+            "revenue_28": revenue_28_days["estimated_revenue"],
+            "cpm_28": revenue_28_days["cpm"],
+            "revenue_prev_28": revenue_prev_28_days["estimated_revenue"],
+            "cpm_prev_28": revenue_prev_28_days["cpm"],
+            "revenue_365": revenue_365_days["estimated_revenue"],
+            "cpm_365": revenue_365_days["cpm"],
+            "revenue_2022": yearly_revenue_analytics["estimated_revenue_2022"],
+            "cpm_2022": yearly_revenue_analytics["cpm_2022"],
+            "revenue_2023": yearly_revenue_analytics["estimated_revenue_2023"],
+            "cpm_2023": yearly_revenue_analytics["cpm_2023"],
+            "revenue_2024": yearly_revenue_analytics["estimated_revenue_2024"],
+            "cpm_2024": yearly_revenue_analytics["cpm_2024"]
+        })
+
         print(f"\n--- Processing: {channel_name} ---")
         print(f"Stats: {stats}")
         print(f"Analytics (28-day & previous): {analytics}")
@@ -555,59 +586,10 @@ if __name__ == "__main__":
         print(f"Yearly Revenue: {yearly_revenue_analytics}")
         print(f"Channel Icon URL: {channel_icon_url}")
 
-
     print("\n✅ Finished processing all channels.")
 
-# --- Prepare data for widget export (data.json) ---
-export_data = []
-
-for channel_name, channel_id in CHANNELS.items():
-    # Re-fetch data for export to ensure consistency (or reuse from main loop if preferred)
-    stats = get_channel_stats(channel_id)
-    analytics = get_advanced_analytics(channel_id)
-    yearly_analytics = get_yearly_analytics(channel_id)
-
-    today_date_str = datetime.utcnow().date().isoformat()
-    start_28_days_ago = (datetime.utcnow().date() - timedelta(days=28)).isoformat()
-    start_prev_28_days_ago = (datetime.utcnow().date() - timedelta(days=56)).isoformat()
-    end_prev_28_days_ago = (datetime.utcnow().date() - timedelta(days=29)).isoformat()
-    start_365_days_ago = (datetime.utcnow().date() - timedelta(days=365)).isoformat()
-
-    revenue_28_days = get_revenue_analytics(channel_id, start_28_days_ago, today_date_str)
-    revenue_prev_28_days = get_revenue_analytics(channel_id, start_prev_28_days_ago, end_prev_28_days_ago)
-    revenue_365_days = get_revenue_analytics(channel_id, start_365_days_ago, today_date_str)
-    yearly_revenue_analytics = get_yearly_revenue_analytics(channel_id)
-    
-    channel_icon_url = get_channel_icon(channel_id) # Fetch icon for export
-
-    # Find existing row to get icon URL if available
-    page_id, icon_url_from_notion = find_existing_row(channel_name, today) # Renamed to avoid conflict
-
-    # Add all values into exportable JSON
-    export_data.append({
-        "name": channel_name,
-        "icon": channel_icon_url if channel_icon_url else icon_url_from_notion, # Prefer newly fetched, fallback to existing Notion icon
-        "views_28": analytics["views_28"],
-        "views_prev_28": analytics["views_prev_28"],
-        "subs_28": analytics["subs_28"],
-        "subs_prev_28": analytics["subs_prev_28"],
-        "uploads_28": analytics["uploads_28"],
-        "uploads_prev_28": analytics["uploads_prev_28"],
-        "revenue_28": revenue_28_days["estimated_revenue"],
-        "cpm_28": revenue_28_days["cpm"],
-        "revenue_prev_28": revenue_prev_28_days["estimated_revenue"],
-        "cpm_prev_28": revenue_prev_28_days["cpm"],
-        "revenue_365": revenue_365_days["estimated_revenue"],
-        "cpm_365": revenue_365_days["cpm"],
-        "revenue_2022": yearly_revenue_analytics["estimated_revenue_2022"],
-        "cpm_2022": yearly_revenue_analytics["cpm_2022"],
-        "revenue_2023": yearly_revenue_analytics["estimated_revenue_2023"],
-        "cpm_2023": yearly_revenue_analytics["cpm_2023"],
-        "revenue_2024": yearly_revenue_analytics["estimated_revenue_2024"],
-        "cpm_2024": yearly_revenue_analytics["cpm_2024"]
-    })
-
-# Write data.json for widget
-os.makedirs("public", exist_ok=True)
-with open("public/data.json", "w") as f:
-    json.dump(export_data, f, indent=2)
+    # Write data.json for widgets (reuses data from above — no double-fetch)
+    os.makedirs("public", exist_ok=True)
+    with open("public/data.json", "w") as f:
+        json.dump(export_data, f, indent=2)
+    print(f"📄 Exported data.json for {len(export_data)} channels.")
