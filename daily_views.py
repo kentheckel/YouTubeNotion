@@ -3,7 +3,7 @@ Fetches daily view totals for all network channels and writes to public/daily-vi
 
 Usage:
   python daily_views.py              # Fetch last 7 days (daily mode)
-  python daily_views.py --backfill   # Fetch all available history back to 2022-01-01
+  python daily_views.py --backfill   # Fetch history back to each channel's client start date
 """
 
 import os
@@ -18,23 +18,23 @@ from googleapiclient.discovery import build
 # --- CONFIGURATION ---
 YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
 
+# Channel ID and client start date (backfill won't go earlier than this)
 CHANNELS = {
-    "All The Smoke": "UC2ozVs4pg2K3uFLw6-0ayCQ",
-    "KG Certified": "UCa9W_cPwwbDlwBwHOd1YWoQ",
-    "Morning Kombat": "UC9Qy3sHrr5wil-rkYcmcNcw",
-    "All The Smoke Fight": "UCFPoJNd0d4k1H9A6UOlikcg",
-    "Ring Champs": "UCBX_Qx_Hx5QTuEL72YVyn_A",
-    "San Antonio Spurs": "UCEZHE-0CoHqeL1LGFa2EmQw",
-    "Killswitch": "UCbwGkD8-Fbxun7zgzfC5kjg",
-    "The Late Run": "UCcZ6iVdTPU5g4pN3MaIbruw",
-    "Michael Easter": "UC-3foA4PyACqvubjyrlzIcg",
-    "Anik & Florian": "UCDqSRXkx0E58VdH__Y8expQ",
-    "No Such Thing": "UCFRiYABu5iXlkEF5ZCZd6wQ",
+    "All The Smoke":       {"id": "UC2ozVs4pg2K3uFLw6-0ayCQ", "start": "2025-03-01"},
+    "KG Certified":        {"id": "UCa9W_cPwwbDlwBwHOd1YWoQ", "start": "2025-03-01"},
+    "Morning Kombat":      {"id": "UC9Qy3sHrr5wil-rkYcmcNcw", "start": "2025-03-01"},
+    "All The Smoke Fight":  {"id": "UCFPoJNd0d4k1H9A6UOlikcg", "start": "2025-03-01"},
+    "Ring Champs":         {"id": "UCBX_Qx_Hx5QTuEL72YVyn_A", "start": "2025-03-01"},
+    "Killswitch":          {"id": "UCbwGkD8-Fbxun7zgzfC5kjg", "start": "2025-03-01"},
+    "The Late Run":        {"id": "UCcZ6iVdTPU5g4pN3MaIbruw", "start": "2025-03-01"},
+    "San Antonio Spurs":   {"id": "UCEZHE-0CoHqeL1LGFa2EmQw", "start": "2025-06-01"},
+    "Michael Easter":      {"id": "UC-3foA4PyACqvubjyrlzIcg", "start": "2025-03-01"},
+    "Anik & Florian":      {"id": "UCDqSRXkx0E58VdH__Y8expQ", "start": "2025-03-01"},
+    "No Such Thing":       {"id": "UCFRiYABu5iXlkEF5ZCZd6wQ", "start": "2025-03-01"},
 }
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 OUTPUT_PATH = os.path.join(SCRIPT_DIR, "public", "daily-views.json")
-BACKFILL_START = "2022-01-01"
 
 
 def load_existing_data():
@@ -107,24 +107,31 @@ def main():
     backfill = "--backfill" in sys.argv
     data = load_existing_data()
     today = datetime.utcnow().date()
-
-    if backfill:
-        start_date = BACKFILL_START
-        print(f"Backfill mode: fetching from {start_date} to {today}")
-    else:
-        start_date = (today - timedelta(days=7)).isoformat()
-        print(f"Daily mode: fetching from {start_date} to {today}")
-
     end_date = today.isoformat()
 
-    for channel_name, channel_id in CHANNELS.items():
-        print(f"\n--- {channel_name} ---")
+    if backfill:
+        print(f"Backfill mode: fetching from each channel's client start date to {today}")
+    else:
+        print(f"Daily mode: fetching last 7 days to {today}")
+
+    for channel_name, channel_info in CHANNELS.items():
+        channel_id = channel_info["id"]
+        client_start = channel_info["start"]
+
+        print(f"\n--- {channel_name} (client since {client_start}) ---")
+
+        # Determine start date: backfill uses client start, daily uses last 7 days
+        if backfill:
+            start_date = client_start
+        else:
+            start_date = (today - timedelta(days=7)).isoformat()
 
         # Always update lifetime total views
         total_views = get_channel_total_views(channel_id)
         data["channels"][channel_name] = {
             "channel_id": channel_id,
             "total_views": total_views,
+            "client_start": client_start,
         }
 
         # Fetch daily views if we have a token
