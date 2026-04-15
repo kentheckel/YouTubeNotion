@@ -33,6 +33,7 @@ jobs:
 
       - name: Bulk import all videos to Notion
         env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_VIDEO_DB_ID: ${{ secrets.NOTION_VIDEO_DB_ID }}
         run: python video_tracker.py --bulk

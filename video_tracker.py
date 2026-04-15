@@ -54,7 +54,7 @@ def load_token(channel_id):
         return pickle.load(token_file)
 
 
-def fetch_channel_videos(creds, channel_id, lookback_days=None, page_size=10, max_total_videos=1000):
+def fetch_channel_videos(creds, channel_id, lookback_days=None, page_size=10, max_total_videos=1000, api_key=None):
     """
     Fetches videos for a channel.
     If lookback_days is None, attempts to fetch all videos (up to max_total_videos).
@@ -62,8 +62,11 @@ def fetch_channel_videos(creds, channel_id, lookback_days=None, page_size=10, ma
     Uses pagination to retrieve videos.
     """
     try:
-        youtube = build("youtube", "v3", credentials=creds)
-        
+        if creds:
+            youtube = build("youtube", "v3", credentials=creds)
+        else:
+            youtube = build("youtube", "v3", developerKey=api_key)
+
         # Use playlistItems.list for all channels (1 unit/call vs 100 for search.list)
         uploads_playlist_id = channel_id.replace("UC", "UU", 1)
         print(f"  Using playlistItems.list (uploads playlist: {uploads_playlist_id})")
@@ -127,13 +130,16 @@ def fetch_channel_videos(creds, channel_id, lookback_days=None, page_size=10, ma
             print(f"❌ Error fetching videos for channel {channel_id}: {str(e)}")
             return [] # Return empty list on other errors
 
-def fetch_video_details(creds, video_ids):
+def fetch_video_details(creds, video_ids, api_key=None):
     """Get detailed video information, handling batching for large lists of IDs."""
     try:
         if not video_ids:
             return []
-            
-        youtube = build("youtube", "v3", credentials=creds)
+
+        if creds:
+            youtube = build("youtube", "v3", credentials=creds)
+        else:
+            youtube = build("youtube", "v3", developerKey=api_key)
         all_video_items = []
         
         # The YouTube API v3 videos().list endpoint can take max 50 IDs at a time.
@@ -338,18 +344,22 @@ def run_video_tracker(bulk_mode=False, lookback_days_if_not_bulk=7):
         print(f"\n📊 Processing channel: {channel_name} ({channel_id})")
         
         creds = load_token(channel_id)
+        use_api_key = False
         if not creds:
-            missing_tokens_channels.append(channel_name)
-            continue
+            if YOUTUBE_API_KEY:
+                print(f"  ℹ️ No OAuth token for {channel_name}, using public API key for video discovery.")
+                use_api_key = True
+            else:
+                missing_tokens_channels.append(channel_name)
+                continue
 
         try:
             videos_from_channel_response = []
+            fetch_key = YOUTUBE_API_KEY if use_api_key else None
             if bulk_mode:
-                # For bulk mode, fetch all videos, use larger page size, and a higher total limit
-                videos_from_channel_response = fetch_channel_videos(creds, channel_id, lookback_days=None, page_size=50, max_total_videos=2500) # Increased max_total_videos for bulk
+                videos_from_channel_response = fetch_channel_videos(creds, channel_id, lookback_days=None, page_size=50, max_total_videos=2500, api_key=fetch_key)
             else:
-                # For regular mode, fetch recent videos, smaller page size
-                videos_from_channel_response = fetch_channel_videos(creds, channel_id, lookback_days=lookback_days_if_not_bulk, page_size=10, max_total_videos=50) # max_total_videos acts as a safety for recent
+                videos_from_channel_response = fetch_channel_videos(creds, channel_id, lookback_days=lookback_days_if_not_bulk, page_size=10, max_total_videos=50, api_key=fetch_key)
             
             if videos_from_channel_response is None: # Check for quota issue
                 quota_issues_channels.append(channel_name)
@@ -376,7 +386,7 @@ def run_video_tracker(bulk_mode=False, lookback_days_if_not_bulk=7):
                 continue
 
             print(f"⬇️ Fetching details for {len(video_ids_to_fetch_details)} new videos for {channel_name}...")
-            video_details_list = fetch_video_details(creds, video_ids_to_fetch_details)
+            video_details_list = fetch_video_details(creds, video_ids_to_fetch_details, api_key=fetch_key)
 
             if video_details_list is None: # Check for quota issue from fetch_video_details
                 quota_issues_channels.append(channel_name)

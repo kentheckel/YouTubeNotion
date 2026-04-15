@@ -42,6 +42,7 @@ jobs:
 
       - name: Discover new videos (last 3 days)
         env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_VIDEO_DB_ID: ${{ secrets.NOTION_VIDEO_DB_ID }}
         run: python video_tracker.py
