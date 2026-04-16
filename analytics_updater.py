@@ -76,7 +76,7 @@ def get_videos_from_notion():
     url = f"https://api.notion.com/v1/databases/{VIDEO_DB_ID}/query"
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
-        "Notion-Version": "2022-06-28",
+        "Notion-Version": "2026-03-11",
         "Content-Type": "application/json"
     }
     
@@ -144,7 +144,7 @@ def update_video_in_notion(notion_page_id, analytics_data):
     url = f"https://api.notion.com/v1/pages/{notion_page_id}"
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
-        "Notion-Version": "2022-06-28",
+        "Notion-Version": "2026-03-11",
         "Content-Type": "application/json"
     }
 

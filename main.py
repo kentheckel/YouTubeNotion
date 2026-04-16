@@ -145,7 +145,7 @@ def find_existing_row(channel_name, date_str):
     url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
-        "Notion-Version": "2022-06-28",
+        "Notion-Version": "2026-03-11",
         "Content-Type": "application/json"
     }
 
@@ -273,7 +273,7 @@ def upsert_notion_row(channel, stats, analytics, yearly, revenue_28, revenue_pre
 
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
-        "Notion-Version": "2022-06-28",
+        "Notion-Version": "2026-03-11",
         "Content-Type": "application/json"
     }
 
@@ -317,8 +317,7 @@ def upsert_notion_row(channel, stats, analytics, yearly, revenue_28, revenue_pre
         properties["Channel Icon"] = {
             "files": [
                 {
-                    "name": f"{channel} Icon", # Optional name for the file in Notion
-                    "type": "external",
+                    "name": f"{channel} Icon",
                     "external": {
                         "url": channel_icon_url
                     }
@@ -331,7 +330,6 @@ def upsert_notion_row(channel, stats, analytics, yearly, revenue_28, revenue_pre
             "files": [
                 {
                     "name": f"{channel} Icon",
-                    "type": "external",
                     "external": {
                         "url": existing_icon_url
                     }

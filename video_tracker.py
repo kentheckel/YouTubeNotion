@@ -256,7 +256,7 @@ def create_notion_video_row(video, channel_name, channel_id):
     url = "https://api.notion.com/v1/pages"
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
-        "Notion-Version": "2022-06-28",
+        "Notion-Version": "2026-03-11",
         "Content-Type": "application/json"
     }
     try:
@@ -278,7 +278,7 @@ def create_notion_video_row(video, channel_name, channel_id):
                 "Avg View %": {"number": 0},  # Placeholder; requires YouTube Analytics API
                 "Duration (Mins)": {"number": duration_mins}, # Renamed from Avg View Min
                 "Format": {"select": {"name": format_type}},
-                "Thumbnail": {"url": f"https://i.ytimg.com/vi/{video['id']}/hqdefault.jpg"},
+                "Thumbnail": {"files": [{"name": f"{video['id']}.jpg", "external": {"url": f"https://i.ytimg.com/vi/{video['id']}/hqdefault.jpg"}}]},
                 "Video ID": {"rich_text": [{"text": {"content": video["id"]}}]},
                 "Channel ID": {"rich_text": [{"text": {"content": channel_id}}]}
             }
@@ -301,7 +301,7 @@ def is_video_in_notion(video_id):
     url = f"https://api.notion.com/v1/databases/{VIDEO_DB_ID}/query"
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
-        "Notion-Version": "2022-06-28",
+        "Notion-Version": "2026-03-11",
         "Content-Type": "application/json"
     }
     payload = {

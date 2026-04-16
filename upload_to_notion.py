@@ -8,7 +8,7 @@ NOTION_VIDEO_DB_ID = os.environ["NOTION_VIDEO_DB_ID"]
 
 headers = {
     "Authorization": f"Bearer {NOTION_TOKEN}",
-    "Notion-Version": "2022-06-28",
+    "Notion-Version": "2026-03-11",
     "Content-Type": "application/json"
 }
 
@@ -24,7 +24,7 @@ def create_notion_page(video):
         "Avg View %": {"number": float(video["Avg View %"]) if video["Avg View %"] else 0},
         "Avg View Min": {"number": float(video["Avg View Min"]) if video["Avg View Min"] else 0},
         "Format": {"select": {"name": video["Format"]}},
-        "Thumbnail": {"url": video["Thumbnail"]}
+        "Thumbnail": {"files": [{"name": "thumbnail.jpg", "external": {"url": video["Thumbnail"]}}]}
     }
 
     payload = {
