@@ -1,59 +1,59 @@
 {
-  "last_updated": "2026-06-17",
+  "last_updated": "2026-06-18",
   "channels": {
     "All The Smoke": {
       "channel_id": "UC2ozVs4pg2K3uFLw6-0ayCQ",
-      "total_views": 699326770,
+      "total_views": 699656266,
       "client_start": "2025-03-01"
     },
     "KG Certified": {
       "channel_id": "UCa9W_cPwwbDlwBwHOd1YWoQ",
-      "total_views": 106038490,
+      "total_views": 106082266,
       "client_start": "2025-03-01"
     },
     "Morning Kombat": {
       "channel_id": "UC9Qy3sHrr5wil-rkYcmcNcw",
-      "total_views": 56126510,
+      "total_views": 56178751,
       "client_start": "2025-03-01"
     },
     "All The Smoke Fight": {
       "channel_id": "UCFPoJNd0d4k1H9A6UOlikcg",
-      "total_views": 774689248,
+      "total_views": 775222947,
       "client_start": "2025-03-01"
     },
     "Ring Champs": {
       "channel_id": "UCBX_Qx_Hx5QTuEL72YVyn_A",
-      "total_views": 30422912,
+      "total_views": 30442737,
       "client_start": "2025-03-01"
     },
     "San Antonio Spurs": {
       "channel_id": "UCEZHE-0CoHqeL1LGFa2EmQw",
-      "total_views": 170167988,
+      "total_views": 170512616,
       "client_start": "2025-06-01"
     },
     "Killswitch": {
       "channel_id": "UCbwGkD8-Fbxun7zgzfC5kjg",
-      "total_views": 32136,
+      "total_views": 32145,
       "client_start": "2025-03-01"
     },
     "The Late Run": {
       "channel_id": "UCcZ6iVdTPU5g4pN3MaIbruw",
-      "total_views": 21374833,
+      "total_views": 21568672,
       "client_start": "2025-03-01"
     },
     "Michael Easter": {
       "channel_id": "UC-3foA4PyACqvubjyrlzIcg",
-      "total_views": 466246,
+      "total_views": 471014,
       "client_start": "2025-03-01"
     },
     "Anik & Florian": {
       "channel_id": "UCDqSRXkx0E58VdH__Y8expQ",
-      "total_views": 7956695,
+      "total_views": 7975531,
       "client_start": "2025-03-01"
     },
     "No Such Thing": {
       "channel_id": "UCFRiYABu5iXlkEF5ZCZd6wQ",
-      "total_views": 535767,
+      "total_views": 556065,
       "client_start": "2025-03-01"
     }
   },
@@ -17943,9 +17943,20 @@
       "The Late Run": 287446,
       "San Antonio Spurs": 956391,
       "_total": 1914848
+    },
+    "2026-06-15": {
+      "All The Smoke": 478034,
+      "KG Certified": 109539,
+      "Morning Kombat": 69962,
+      "All The Smoke Fight": 370796,
+      "Ring Champs": 16187,
+      "Killswitch": 14,
+      "The Late Run": 289678,
+      "San Antonio Spurs": 801240,
+      "_total": 2135450
     }
   },
-  "network_total_views": 1867137595,
+  "network_total_views": 1868699010,
   "earliest_date": "2022-01-01",
-  "latest_date": "2026-06-14"
+  "latest_date": "2026-06-15"
 }
