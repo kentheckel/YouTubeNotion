@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-06-22",
+  "last_updated": "2026-06-23",
   "channels": {
     "All The Smoke": {
       "channel_id": "UC2ozVs4pg2K3uFLw6-0ayCQ",
@@ -17967,26 +17967,26 @@
       "_total": 2076369
     },
     "2026-06-17": {
-      "All The Smoke": 568892,
-      "KG Certified": 50471,
-      "Morning Kombat": 35336,
-      "All The Smoke Fight": 691654,
-      "Ring Champs": 37372,
+      "All The Smoke": 568191,
+      "KG Certified": 50440,
+      "Morning Kombat": 35319,
+      "All The Smoke Fight": 690876,
+      "Ring Champs": 37366,
       "Killswitch": 14,
-      "The Late Run": 222714,
-      "San Antonio Spurs": 349960,
-      "_total": 1956413
+      "The Late Run": 222613,
+      "San Antonio Spurs": 349812,
+      "_total": 1954631
     },
     "2026-06-18": {
-      "All The Smoke": 397940,
-      "KG Certified": 132542,
-      "Morning Kombat": 53205,
-      "All The Smoke Fight": 536274,
-      "Ring Champs": 39860,
+      "All The Smoke": 395941,
+      "KG Certified": 132132,
+      "Morning Kombat": 52997,
+      "All The Smoke Fight": 533934,
+      "Ring Champs": 39695,
       "Killswitch": 5,
-      "The Late Run": 278634,
-      "San Antonio Spurs": 256838,
-      "_total": 1695298
+      "The Late Run": 273446,
+      "San Antonio Spurs": 255834,
+      "_total": 1683984
     },
     "2026-06-19": {
       "All The Smoke": 289984,
@@ -17998,9 +17998,20 @@
       "The Late Run": 215579,
       "San Antonio Spurs": 258837,
       "_total": 1700467
+    },
+    "2026-06-20": {
+      "All The Smoke": 305667,
+      "KG Certified": 356399,
+      "Morning Kombat": 33189,
+      "All The Smoke Fight": 304652,
+      "Ring Champs": 69223,
+      "Killswitch": 5,
+      "The Late Run": 207699,
+      "San Antonio Spurs": 281188,
+      "_total": 1558022
     }
   },
   "network_total_views": 1876257209,
   "earliest_date": "2022-01-01",
-  "latest_date": "2026-06-19"
+  "latest_date": "2026-06-20"
 }
