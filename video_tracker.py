@@ -292,13 +292,47 @@ def create_notion_video_row(video, channel_name, channel_id):
     except Exception as e:
         print(f"❌ Error creating Notion row for {video.get('id', 'unknown')}: {str(e)}")
 
-def is_video_in_notion(video_id):
-    """Checks if a video with the given video_id already exists in the Notion database."""
-    if not VIDEO_DB_ID or not NOTION_TOKEN:
-        print("❌ Notion DB ID or Token not configured. Cannot check for existing videos.")
-        return False # Or raise an error
+_DATA_SOURCE_ID_CACHE = None
 
-    url = f"https://api.notion.com/v1/databases/{VIDEO_DB_ID}/query"
+class NotionDedupError(Exception):
+    pass
+
+def get_video_data_source_id():
+    """Resolves the data source ID for VIDEO_DB_ID. Notion 2025-09-03+ requires querying
+    data sources, not the database container. Cached after first lookup."""
+    global _DATA_SOURCE_ID_CACHE
+    if _DATA_SOURCE_ID_CACHE:
+        return _DATA_SOURCE_ID_CACHE
+
+    url = f"https://api.notion.com/v1/databases/{VIDEO_DB_ID}"
+    headers = {
+        "Authorization": f"Bearer {NOTION_TOKEN}",
+        "Notion-Version": "2026-03-11",
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise NotionDedupError(
+            f"Failed to fetch database {VIDEO_DB_ID} to resolve data source: "
+            f"{response.status_code} - {response.text}"
+        )
+    data = response.json()
+    data_sources = data.get("data_sources") or []
+    if not data_sources:
+        raise NotionDedupError(
+            f"Database {VIDEO_DB_ID} has no data_sources in response: {data}"
+        )
+    _DATA_SOURCE_ID_CACHE = data_sources[0]["id"]
+    print(f"  Resolved Notion data source ID: {_DATA_SOURCE_ID_CACHE}")
+    return _DATA_SOURCE_ID_CACHE
+
+def is_video_in_notion(video_id):
+    """Checks if a video with the given video_id already exists in the Notion database.
+    Raises NotionDedupError on API failure — callers MUST NOT silently add duplicates."""
+    if not VIDEO_DB_ID or not NOTION_TOKEN:
+        raise NotionDedupError("Notion DB ID or Token not configured.")
+
+    data_source_id = get_video_data_source_id()
+    url = f"https://api.notion.com/v1/data_sources/{data_source_id}/query"
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
         "Notion-Version": "2026-03-11",
@@ -306,23 +340,18 @@ def is_video_in_notion(video_id):
     }
     payload = {
         "filter": {
-            "property": "Video ID", # Assumes you have a text property named 'Video ID'
+            "property": "Video ID",
             "rich_text": {
                 "equals": video_id
             }
         }
     }
-    try:
-        response = requests.post(url, headers=headers, json=payload)
-        if response.status_code == 200:
-            data = response.json()
-            return len(data.get("results", [])) > 0
-        else:
-            print(f"❌ Error querying Notion to check for video {video_id}: {response.status_code} - {response.text}")
-            return False # Default to false on error to avoid blocking new entries, but log it
-    except Exception as e:
-        print(f"❌ Exception querying Notion for video {video_id}: {str(e)}")
-        return False
+    response = requests.post(url, headers=headers, json=payload)
+    if response.status_code != 200:
+        raise NotionDedupError(
+            f"Query failed for video {video_id}: {response.status_code} - {response.text}"
+        )
+    return len(response.json().get("results", [])) > 0
 
 def run_video_tracker(bulk_mode=False, lookback_days_if_not_bulk=7):
     """
