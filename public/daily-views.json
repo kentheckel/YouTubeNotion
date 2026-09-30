@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-09-29",
+  "last_updated": "2026-09-30",
   "channels": {
     "All The Smoke": {
       "channel_id": "UC2ozVs4pg2K3uFLw6-0ayCQ",
-      "total_views": 741453375,
+      "total_views": 742070745,
       "client_start": "2025-03-01"
     },
     "KG Certified": {
       "channel_id": "UCa9W_cPwwbDlwBwHOd1YWoQ",
-      "total_views": 114324704,
+      "total_views": 114360923,
       "client_start": "2025-03-01"
     },
     "Morning Kombat": {
@@ -18,17 +18,17 @@
     },
     "All The Smoke Fight": {
       "channel_id": "UCFPoJNd0d4k1H9A6UOlikcg",
-      "total_views": 798770423,
+      "total_views": 798913860,
       "client_start": "2025-03-01"
     },
     "Ring Champs": {
       "channel_id": "UCBX_Qx_Hx5QTuEL72YVyn_A",
-      "total_views": 36944016,
+      "total_views": 36983126,
       "client_start": "2025-03-01"
     },
     "San Antonio Spurs": {
       "channel_id": "UCEZHE-0CoHqeL1LGFa2EmQw",
-      "total_views": 189310998,
+      "total_views": 189777961,
       "client_start": "2025-06-01"
     },
     "Killswitch": {
@@ -38,17 +38,17 @@
     },
     "The Late Run": {
       "channel_id": "UCcZ6iVdTPU5g4pN3MaIbruw",
-      "total_views": 52991376,
+      "total_views": 53064790,
       "client_start": "2025-03-01"
     },
     "Michael Easter": {
       "channel_id": "UC-3foA4PyACqvubjyrlzIcg",
-      "total_views": 1231524,
+      "total_views": 1240552,
       "client_start": "2025-03-01"
     },
     "Anik & Florian": {
       "channel_id": "UCDqSRXkx0E58VdH__Y8expQ",
-      "total_views": 9367639,
+      "total_views": 9410203,
       "client_start": "2025-03-01"
     },
     "No Such Thing": {
@@ -19087,9 +19087,20 @@
       "The Late Run": 49016,
       "San Antonio Spurs": 246107,
       "_total": 1061321
+    },
+    "2026-09-27": {
+      "All The Smoke": 428634,
+      "KG Certified": 14765,
+      "Morning Kombat": 22396,
+      "All The Smoke Fight": 142183,
+      "Ring Champs": 43330,
+      "Killswitch": 11,
+      "The Late Run": 57009,
+      "San Antonio Spurs": 159366,
+      "_total": 867694
     }
   },
-  "network_total_views": 2004162436,
+  "network_total_views": 2005590541,
   "earliest_date": "2022-01-01",
-  "latest_date": "2026-09-26"
+  "latest_date": "2026-09-27"
 }
